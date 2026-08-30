@@ -1,0 +1,7 @@
+{
+  "name": "KKU Nearmiss Safety",
+  "description": "KKU Nearmiss Safety — AI Safety & Environment Assistant สำหรับมหาวิทยาลัยขอนแก่น — Safe • Simple • Fast",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
