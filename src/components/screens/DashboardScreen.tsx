@@ -12,6 +12,13 @@ import {
   CheckCheck,
   ChevronRight,
   TrendingUp,
+  Lock,
+  Unlock,
+  ShieldCheck,
+  Trash2,
+  FileEdit,
+  KeyRound,
+  LogOut,
 } from 'lucide-react';
 import {
   CurrentUser,
@@ -25,7 +32,12 @@ import {
   getDashboardStats,
   updateNearMissStatus,
   updateEnvReportStatus,
+  deleteNearMissReport,
+  deleteEnvReport,
+  isAdminAuthenticated,
+  setAdminAuthenticated,
 } from '../../lib/storage';
+import { AdminPasscodeModal } from '../AdminPasscodeModal';
 
 interface DashboardScreenProps {
   currentUser: CurrentUser;
@@ -33,15 +45,15 @@ interface DashboardScreenProps {
   nearMissReports?: NearMissReport[];
   envReports?: EnvReport[];
   onRefreshData?: () => void;
-  onShowToast?: (msg: string) => void;
+  onShowToast?: (msg: string, type?: 'success' | 'danger' | 'info') => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   currentUser,
   nearMissReports = [],
   envReports = [],
-  onRefreshData,
-  onShowToast,
+  onRefreshData = () => {},
+  onShowToast = (_msg?: string, _type?: 'success' | 'danger' | 'info') => {},
 }) => {
   const lang = currentUser?.language || 'th';
   const t = translations[lang] || translations.th;
@@ -50,6 +62,19 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const stats = getDashboardStats();
   const [activeTab, setActiveTab] = useState<'all' | 'new' | 'in_progress' | 'resolved'>('all');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<'all' | 'hazard' | 'env'>('all');
+
+  // Admin state & passcode modal
+  const [isAdmin, setIsAdmin] = useState<boolean>(isAdminAuthenticated());
+  const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{
+    id: string;
+    kind: 'hazard' | 'env';
+    newStatus: ReportStatus;
+  } | null>(null);
+
+  // Note editing state for Admin
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
 
   const safeNearMiss = Array.isArray(nearMissReports) ? nearMissReports : [];
   const safeEnv = Array.isArray(envReports) ? envReports : [];
@@ -68,6 +93,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       createdAt: r.createdAt,
       aiTag: r.aiAnalysisTag,
       photoDataUrl: r.photoDataUrl,
+      adminNote: r.adminNote,
+      resolvedAt: r.resolvedAt,
     })),
     ...safeEnv.map((e) => ({
       id: e.id,
@@ -81,6 +108,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       createdAt: e.createdAt,
       aiTag: undefined,
       photoDataUrl: e.photoDataUrl,
+      adminNote: e.adminNote,
+      resolvedAt: e.resolvedAt,
     })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -91,35 +120,200 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     return true;
   });
 
-  const handleUpdateStatus = (id: string, kind: 'hazard' | 'env', newStatus: ReportStatus) => {
+  const handleRequestStatusChange = (id: string, kind: 'hazard' | 'env', newStatus: ReportStatus) => {
+    if (!isAdmin) {
+      setPendingStatusUpdate({ id, kind, newStatus });
+      setIsPasscodeModalOpen(true);
+      return;
+    }
+    executeStatusUpdate(id, kind, newStatus);
+  };
+
+  const executeStatusUpdate = (id: string, kind: 'hazard' | 'env', newStatus: ReportStatus, note?: string) => {
     if (kind === 'hazard') {
-      updateNearMissStatus(id, newStatus);
+      updateNearMissStatus(id, newStatus, note);
     } else {
-      updateEnvReportStatus(id, newStatus);
+      updateEnvReportStatus(id, newStatus, note);
     }
     onRefreshData();
     onShowToast(
       isTh
-        ? `✓ อัปเดตสถานะเป็น: ${newStatus === 'resolved' ? 'แก้ไขแล้ว' : newStatus === 'in_progress' ? 'กำลังดำเนินการ' : 'รอดำเนินการ'}`
-        : `✓ Status updated to ${newStatus}`
+        ? `✓ [แอดมิน] อัปเดตสถานะเป็น: ${newStatus === 'resolved' ? 'แก้ไขแล้ว' : newStatus === 'in_progress' ? 'กำลังดำเนินการ' : 'รอดำเนินการ'}`
+        : `✓ [Admin] Status updated to ${newStatus}`,
+      'success'
     );
+  };
+
+  const handleAdminAuthSuccess = () => {
+    setIsAdmin(true);
+    setAdminAuthenticated(true);
+    onShowToast(
+      isTh
+        ? '✓ เข้าสู่ระบบแอดมินสำเร็จ! ท่านสามารถจัดการสถานะได้แล้ว'
+        : '✓ Admin unlocked! You can now manage report statuses.',
+      'success'
+    );
+
+    // If user clicked a specific button before unlocking
+    if (pendingStatusUpdate) {
+      executeStatusUpdate(
+        pendingStatusUpdate.id,
+        pendingStatusUpdate.kind,
+        pendingStatusUpdate.newStatus
+      );
+      setPendingStatusUpdate(null);
+    }
+  };
+
+  const handleLogoutAdmin = () => {
+    setAdminAuthenticated(false);
+    setIsAdmin(false);
+    onShowToast(
+      isTh
+        ? '🔒 ออกจากโหมดแอดมินแล้ว (กลับสู่โหมดผู้ใช้ทั่วไป)'
+        : '🔒 Switched back to General User mode',
+      'info'
+    );
+  };
+
+  const handleDeleteReport = (id: string, kind: 'hazard' | 'env') => {
+    if (!isAdmin) {
+      setIsPasscodeModalOpen(true);
+      return;
+    }
+    if (window.confirm(isTh ? 'ต้องการลบรายงานนี้ใช่หรือไม่?' : 'Delete this report?')) {
+      if (kind === 'hazard') {
+        deleteNearMissReport(id);
+      } else {
+        deleteEnvReport(id);
+      }
+      onRefreshData();
+      onShowToast(isTh ? '✓ ลบรายการเรียบร้อยแล้ว' : '✓ Report deleted', 'info');
+    }
+  };
+
+  const handleSaveNote = (id: string, kind: 'hazard' | 'env', currentStatus: ReportStatus) => {
+    if (kind === 'hazard') {
+      updateNearMissStatus(id, currentStatus, noteText);
+    } else {
+      updateEnvReportStatus(id, currentStatus, noteText);
+    }
+    setEditingNoteId(null);
+    setNoteText('');
+    onRefreshData();
+    onShowToast(isTh ? '✓ บันทึกหมายเหตุการแก้ไขแล้ว' : '✓ Admin note saved', 'success');
   };
 
   return (
     <div className="space-y-5 pb-24 max-w-xl mx-auto">
+      {/* Admin Passcode Modal */}
+      <AdminPasscodeModal
+        isOpen={isPasscodeModalOpen}
+        onClose={() => {
+          setIsPasscodeModalOpen(false);
+          setPendingStatusUpdate(null);
+        }}
+        onSuccess={handleAdminAuthSuccess}
+        isTh={isTh}
+      />
+
       {/* 1. Header */}
       <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-3xl p-5 shadow-lg border border-slate-800">
-        <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-          <BarChart3 className="w-4 h-4" />
-          <span>Safety Officer & Executive Management</span>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
+            <BarChart3 className="w-4 h-4" />
+            <span>Safety Officer & Executive Management</span>
+          </div>
+
+          {/* Admin badge */}
+          {isAdmin ? (
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Admin Active</span>
+            </span>
+          ) : (
+            <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[11px] font-semibold flex items-center gap-1">
+              <Lock className="w-3 h-3" />
+              <span>User Mode</span>
+            </span>
+          )}
         </div>
+
         <h2 className="text-xl font-black text-white">{t.dashboardTitle}</h2>
         <p className="text-xs text-slate-300 mt-1 leading-relaxed">
           {t.dashboardDesc}
         </p>
       </div>
 
-      {/* 2. Key Metrics Grid (4 Blocks) */}
+      {/* 2. Access Level & Role Banner */}
+      <div
+        className={`p-4 rounded-3xl border transition-all ${
+          isAdmin
+            ? 'bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border-emerald-500/40 text-emerald-100 shadow-sm'
+            : 'bg-white border-amber-200 shadow-sm text-slate-800'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                isAdmin
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'bg-amber-100 text-amber-700'
+              }`}
+            >
+              {isAdmin ? (
+                <Unlock className="w-5 h-5" />
+              ) : (
+                <Lock className="w-5 h-5" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-black uppercase tracking-wider">
+                  {isAdmin
+                    ? (isTh ? '🛡️ โหมดผู้ดูแลระบบ (Admin Mode)' : '🛡️ Admin Authorized')
+                    : (isTh ? '👤 โหมดผู้ใช้ทั่วไป (General User Mode)' : '👤 General User Mode')}
+                </h4>
+              </div>
+              <p className="text-xs mt-1 leading-relaxed opacity-90">
+                {isAdmin
+                  ? (isTh
+                      ? 'ท่านมีสิทธิ์จัดการและอัปเดตสถานะการดำเนินงานแก้ไขปัญหา รวมถึงบันทึกหมายเหตุการซ่อมบำรุง'
+                      : 'You have full permission to update task statuses and manage maintenance records.')
+                  : (isTh
+                      ? 'ผู้ใช้ทั่วไปสามารถแจ้งปัญหาและดูความคืบหน้าได้เท่านั้น การแก้ไขสถานะต้องใช้รหัสผ่านแอดมิน'
+                      : 'General users can only report and view incidents. Enter admin passcode to edit status.')}
+              </p>
+            </div>
+          </div>
+
+          {/* Action button to unlock or logout admin */}
+          <div className="shrink-0">
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={handleLogoutAdmin}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 border border-slate-600 transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{isTh ? 'ออกจากแอดมิน' : 'Lock Admin'}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsPasscodeModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-md"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>{isTh ? 'เข้าสู่ระบบแอดมิน' : 'Admin Login'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Key Metrics Grid (4 Blocks) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {/* Total Near Miss */}
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm text-center">
@@ -162,7 +356,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </div>
       </div>
 
-      {/* 3. Status Pipeline Summary (New vs In-Progress vs Resolved) */}
+      {/* 4. Status Pipeline Summary (New vs In-Progress vs Resolved) */}
       <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center justify-between">
           <span>{isTh ? 'สถานะการดำเนินงานแก้ไขปัญหา' : 'Resolution Pipeline'}</span>
@@ -216,7 +410,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </div>
       </div>
 
-      {/* 4. Top Incident Locations in KKU */}
+      {/* 5. Top Incident Locations in KKU */}
       <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
           <TrendingUp className="w-4 h-4 text-emerald-600" />
@@ -250,7 +444,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </div>
       </div>
 
-      {/* 5. Reports Table & Status Updater */}
+      {/* 6. Reports Table & Status Updater */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
@@ -339,6 +533,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </p>
                 </div>
 
+                {item.adminNote && (
+                  <div className="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 space-y-0.5">
+                    <span className="font-bold flex items-center gap-1 text-[11px] text-indigo-700">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      {isTh ? 'บันทึกการแก้ไขโดยแอดมิน:' : 'Admin Action Record:'}
+                    </span>
+                    <p className="text-slate-700">{item.adminNote}</p>
+                  </div>
+                )}
+
                 {item.photoDataUrl && (
                   <div className="rounded-xl overflow-hidden max-h-36 bg-slate-900 flex items-center justify-center">
                     <img
@@ -350,46 +554,123 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </div>
                 )}
 
-                {/* Status Switcher Buttons (Real-time update) */}
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold text-slate-600">
-                    {t.updateStatus}:
-                  </span>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => handleUpdateStatus(item.id, item.kind, 'new')}
-                      disabled={item.status === 'new'}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
-                        item.status === 'new'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-slate-100 hover:bg-red-100 text-slate-700'
-                      }`}
-                    >
-                      รอดำเนินการ
-                    </button>
-                    <button
-                      onClick={() => handleUpdateStatus(item.id, item.kind, 'in_progress')}
-                      disabled={item.status === 'in_progress'}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
-                        item.status === 'in_progress'
-                          ? 'bg-amber-500 text-slate-950 font-black'
-                          : 'bg-slate-100 hover:bg-amber-100 text-slate-700'
-                      }`}
-                    >
-                      กำลังทำ
-                    </button>
-                    <button
-                      onClick={() => handleUpdateStatus(item.id, item.kind, 'resolved')}
-                      disabled={item.status === 'resolved'}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
-                        item.status === 'resolved'
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-slate-100 hover:bg-emerald-100 text-slate-700'
-                      }`}
-                    >
-                      แก้ไขแล้ว ✓
-                    </button>
+                {/* Status Switcher & Management Section */}
+                <div className="pt-2.5 border-t border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-600">
+                        {t.updateStatus}:
+                      </span>
+                      {!isAdmin && (
+                        <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1 border border-amber-200/60">
+                          <Lock className="w-3 h-3" />
+                          {isTh ? 'เฉพาะแอดมิน' : 'Admin only'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Status Switcher Buttons */}
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleRequestStatusChange(item.id, item.kind, 'new')}
+                        disabled={item.status === 'new' && isAdmin}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                          item.status === 'new'
+                            ? 'bg-red-600 text-white shadow-sm ring-1 ring-red-400'
+                            : 'bg-slate-100 hover:bg-red-50 text-slate-700'
+                        }`}
+                        title={!isAdmin ? (isTh ? 'กรุณาใส่รหัสผ่านแอดมิน' : 'Enter Admin Passcode') : undefined}
+                      >
+                        {!isAdmin && <Lock className="w-2.5 h-2.5 opacity-60" />}
+                        <span>รอดำเนินการ</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRequestStatusChange(item.id, item.kind, 'in_progress')}
+                        disabled={item.status === 'in_progress' && isAdmin}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                          item.status === 'in_progress'
+                            ? 'bg-amber-500 text-slate-950 font-black shadow-sm ring-1 ring-amber-400'
+                            : 'bg-slate-100 hover:bg-amber-50 text-slate-700'
+                        }`}
+                        title={!isAdmin ? (isTh ? 'กรุณาใส่รหัสผ่านแอดมิน' : 'Enter Admin Passcode') : undefined}
+                      >
+                        {!isAdmin && <Lock className="w-2.5 h-2.5 opacity-60" />}
+                        <span>กำลังทำ</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRequestStatusChange(item.id, item.kind, 'resolved')}
+                        disabled={item.status === 'resolved' && isAdmin}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                          item.status === 'resolved'
+                            ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400'
+                            : 'bg-slate-100 hover:bg-emerald-50 text-slate-700'
+                        }`}
+                        title={!isAdmin ? (isTh ? 'กรุณาใส่รหัสผ่านแอดมิน' : 'Enter Admin Passcode') : undefined}
+                      >
+                        {!isAdmin && <Lock className="w-2.5 h-2.5 opacity-60" />}
+                        <span>แก้ไขแล้ว ✓</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Extra Admin Actions: Note & Delete */}
+                  {isAdmin && (
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        {editingNoteId === item.id ? (
+                          <div className="flex items-center gap-1.5 w-full">
+                            <input
+                              type="text"
+                              value={noteText}
+                              onChange={(e) => setNoteText(e.target.value)}
+                              placeholder={isTh ? 'ใส่หมายเหตุการแก้ไข...' : 'Action notes...'}
+                              className="px-2 py-1 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleSaveNote(item.id, item.kind, item.status)}
+                              className="px-2 py-1 bg-emerald-600 text-white rounded-lg font-bold text-xs"
+                            >
+                              {isTh ? 'บันทึก' : 'Save'}
+                            </button>
+                            <button
+                              onClick={() => setEditingNoteId(null)}
+                              className="px-2 py-1 text-slate-500 text-xs"
+                            >
+                              {isTh ? 'ยกเลิก' : 'Cancel'}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingNoteId(item.id);
+                              setNoteText(item.adminNote || '');
+                            }}
+                            className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 text-[11px]"
+                          >
+                            <FileEdit className="w-3 h-3" />
+                            <span>{item.adminNote ? (isTh ? 'แก้ไขหมายเหตุ' : 'Edit Note') : (isTh ? '+ บันทึกหมายเหตุ' : '+ Add Note')}</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteReport(item.id, item.kind)}
+                        className="text-red-500 hover:text-red-700 font-medium flex items-center gap-1 text-[11px] p-1"
+                        title="Delete Report"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{isTh ? 'ลบรายการ' : 'Delete'}</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))

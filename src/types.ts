@@ -67,6 +67,8 @@ export interface NearMissReport {
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
   aiAnalysisTag?: string;
+  adminNote?: string;
+  resolvedAt?: string;
 }
 
 export interface ChecklistItem {
@@ -122,6 +124,9 @@ export interface EnvReport {
   status: ReportStatus;
   severity?: Severity;
   createdAt: string; // ISO string
+  updatedAt?: string; // ISO string
+  adminNote?: string;
+  resolvedAt?: string;
 }
 
 export interface HealthRemindersSettings {

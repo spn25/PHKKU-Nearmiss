@@ -26,7 +26,38 @@ export const STORAGE_KEYS = {
   HEALTH_REMINDERS: 'safemate_healthReminders',
   EMERGENCY_CONTACTS: 'safemate_emergencyContacts',
   SAFETY_MANUAL: 'safemate_safetyManual',
+  ADMIN_AUTH: 'safemate_admin_auth',
 };
+
+export const ADMIN_PASSCODE = '12345';
+
+export function isAdminAuthenticated(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function setAdminAuthenticated(authenticated: boolean): void {
+  try {
+    if (authenticated) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+    }
+  } catch {
+    // fallback
+  }
+}
+
+export function verifyAdminPasscode(passcode: string): boolean {
+  if (passcode.trim() === ADMIN_PASSCODE) {
+    setAdminAuthenticated(true);
+    return true;
+  }
+  return false;
+}
 
 // ==========================================
 // ข้อมูลตั้งต้น (Initial Seed Data)
@@ -477,14 +508,26 @@ export function submitNearMissReport(data: Omit<NearMissReport, 'id' | 'createdA
   return newReport;
 }
 
-export function updateNearMissStatus(id: string, status: ReportStatus): NearMissReport[] {
+export function updateNearMissStatus(id: string, status: ReportStatus, adminNote?: string): NearMissReport[] {
   const reports = getNearMissReports();
   const index = reports.findIndex((r) => r.id === id);
   if (index !== -1) {
     reports[index].status = status;
     reports[index].updatedAt = new Date().toISOString();
+    if (adminNote !== undefined) {
+      reports[index].adminNote = adminNote;
+    }
+    if (status === 'resolved' && !reports[index].resolvedAt) {
+      reports[index].resolvedAt = new Date().toISOString();
+    }
     localStorage.setItem(STORAGE_KEYS.NEAR_MISS_REPORTS, JSON.stringify(reports));
   }
+  return reports;
+}
+
+export function deleteNearMissReport(id: string): NearMissReport[] {
+  const reports = getNearMissReports().filter((r) => r.id !== id);
+  localStorage.setItem(STORAGE_KEYS.NEAR_MISS_REPORTS, JSON.stringify(reports));
   return reports;
 }
 
@@ -563,13 +606,26 @@ export function submitEnvironmentReport(data: Omit<EnvReport, 'id' | 'createdAt'
   return newReport;
 }
 
-export function updateEnvReportStatus(id: string, status: ReportStatus): EnvReport[] {
+export function updateEnvReportStatus(id: string, status: ReportStatus, adminNote?: string): EnvReport[] {
   const list = getEnvReports();
   const idx = list.findIndex((e) => e.id === id);
   if (idx !== -1) {
     list[idx].status = status;
+    list[idx].updatedAt = new Date().toISOString();
+    if (adminNote !== undefined) {
+      list[idx].adminNote = adminNote;
+    }
+    if (status === 'resolved' && !list[idx].resolvedAt) {
+      list[idx].resolvedAt = new Date().toISOString();
+    }
     localStorage.setItem(STORAGE_KEYS.ENV_REPORTS, JSON.stringify(list));
   }
+  return list;
+}
+
+export function deleteEnvReport(id: string): EnvReport[] {
+  const list = getEnvReports().filter((e) => e.id !== id);
+  localStorage.setItem(STORAGE_KEYS.ENV_REPORTS, JSON.stringify(list));
   return list;
 }
 

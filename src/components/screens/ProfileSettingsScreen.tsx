@@ -12,16 +12,27 @@ import {
   Building,
   Sparkles,
   Database,
+  Lock,
+  Unlock,
+  KeyRound,
+  ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 import { CurrentUser, ScreenName, UserRole, Language } from '../../types';
 import { translations } from '../../lib/i18n';
-import { saveCurrentUser, resetAllDataToDefault } from '../../lib/storage';
+import {
+  saveCurrentUser,
+  resetAllDataToDefault,
+  isAdminAuthenticated,
+  setAdminAuthenticated,
+} from '../../lib/storage';
+import { AdminPasscodeModal } from '../AdminPasscodeModal';
 
 interface ProfileSettingsScreenProps {
   currentUser: CurrentUser;
   onNavigate: (screen: ScreenName) => void;
   onUpdateUser: (user: CurrentUser) => void;
-  onShowToast: (msg: string) => void;
+  onShowToast: (msg: string, type?: 'success' | 'danger' | 'info') => void;
 }
 
 export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
@@ -38,6 +49,9 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
   const [facultyDepartment, setFacultyDepartment] = useState(currentUser.facultyDepartment);
   const [emergencyContactName, setEmergencyContactName] = useState(currentUser.emergencyContactName);
   const [emergencyContactPhone, setEmergencyContactPhone] = useState(currentUser.emergencyContactPhone);
+
+  const [isAdmin, setIsAdmin] = useState<boolean>(isAdminAuthenticated());
+  const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +82,28 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
     }
   };
 
+  const handleAdminSuccess = () => {
+    setIsAdmin(true);
+    setAdminAuthenticated(true);
+    onShowToast(
+      isTh
+        ? '✓ เข้าสู่ระบบสิทธิ์แอดมินสำเร็จ (สามารถแก้ไขสถานะปัญหาได้)'
+        : '✓ Admin access authorized (full permissions)',
+      'success'
+    );
+  };
+
+  const handleAdminLogout = () => {
+    setAdminAuthenticated(false);
+    setIsAdmin(false);
+    onShowToast(
+      isTh
+        ? '🔒 ออกจากระบบแอดมินแล้ว (กลับสู่สิทธิ์ผู้ใช้ทั่วไป)'
+        : '🔒 Switched to General User permissions',
+      'info'
+    );
+  };
+
   const roles: { id: UserRole; labelTh: string; labelEn: string }[] = [
     { id: 'worker', labelTh: 'เจ้าหน้าที่ภาคสนาม / ช่างเทคนิค', labelEn: 'Field Worker / Technician' },
     { id: 'student', labelTh: 'นักศึกษา / นักวิจัยในห้องแล็บ', labelEn: 'Student / Lab Researcher' },
@@ -85,13 +121,28 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
 
   return (
     <form onSubmit={handleSave} className="space-y-5 pb-24 max-w-xl mx-auto">
+      {/* Admin Passcode Modal */}
+      <AdminPasscodeModal
+        isOpen={isPasscodeModalOpen}
+        onClose={() => setIsPasscodeModalOpen(false)}
+        onSuccess={handleAdminSuccess}
+        isTh={isTh}
+      />
+
       {/* 1. Header with Avatar */}
       <div className="bg-gradient-to-r from-slate-900 to-teal-950 text-white rounded-3xl p-6 shadow-lg border border-slate-800 flex items-center gap-4">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-black text-2xl flex items-center justify-center shadow-md">
           {name.charAt(0) || 'U'}
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-black text-white truncate">{name}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-black text-white truncate">{name}</h2>
+            {isAdmin && (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold">
+                Admin
+              </span>
+            )}
+          </div>
           <p className="text-xs text-emerald-300 font-medium">
             {isTh
               ? roles.find((r) => r.id === role)?.labelTh
@@ -103,7 +154,78 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
         </div>
       </div>
 
-      {/* 2. Language Switcher Card */}
+      {/* 2. Admin Authentication / Permission Control Card */}
+      <div
+        className={`rounded-3xl p-5 shadow-sm border transition-all ${
+          isAdmin
+            ? 'bg-gradient-to-br from-slate-900 to-indigo-950 text-white border-indigo-500/40'
+            : 'bg-white border-slate-200 text-slate-800'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                isAdmin
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {isAdmin ? (
+                <ShieldCheck className="w-6 h-6" />
+              ) : (
+                <Lock className="w-5 h-5" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-wider flex items-center gap-2">
+                <span>
+                  {isAdmin
+                    ? (isTh ? 'สิทธิ์ผู้ดูแลระบบ (Admin Authorized)' : 'Admin Authorized Mode')
+                    : (isTh ? 'สิทธิ์ผู้ใช้งานทั่วไป (General User)' : 'General User Access')}
+                </span>
+              </h3>
+              <p
+                className={`text-xs mt-1 leading-relaxed ${
+                  isAdmin ? 'text-slate-300' : 'text-slate-500'
+                }`}
+              >
+                {isAdmin
+                  ? (isTh
+                      ? 'คุณกำลังใช้สิทธิ์แอดมิน สามารถปรับเปลี่ยนสถานะการดำเนินงาน (รอดำเนินการ, กำลังทำ, แก้ไขแล้ว) และลบรายงานได้'
+                      : 'You have full admin rights to edit task resolution statuses and manage incident reports.')
+                  : (isTh
+                      ? 'ผู้ใช้ทั่วไปสามารถแจ้งปัญหาและดูรายการได้เท่านั้น หากต้องการสิทธิ์ปรับสถานะ โปรดกรอกรหัสผ่านแอดมิน'
+                      : 'General users can only report and view items. Enter admin passcode to unlock status management.')}
+              </p>
+            </div>
+          </div>
+
+          <div className="shrink-0 pt-0.5">
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={handleAdminLogout}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 border border-slate-600 transition-all flex items-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{isTh ? 'ออกจากแอดมิน' : 'Lock'}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsPasscodeModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>{isTh ? 'กรุณาใส่รหัส' : 'Enter Passcode'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Language Switcher Card */}
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-3">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Globe className="w-4 h-4 text-emerald-600" />
@@ -138,7 +260,7 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
         </div>
       </div>
 
-      {/* 3. Profile Information Fields */}
+      {/* 4. Profile Information Fields */}
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <User className="w-4 h-4 text-emerald-600" />
@@ -192,7 +314,7 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
         </div>
       </div>
 
-      {/* 4. ICE Emergency Contact */}
+      {/* 5. ICE Emergency Contact */}
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Phone className="w-4 h-4 text-red-600" />
@@ -226,7 +348,7 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
         </div>
       </div>
 
-      {/* 5. Safety Badges & Gamification */}
+      {/* 6. Safety Badges & Gamification */}
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-3">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Award className="w-4 h-4 text-amber-500" />
@@ -249,7 +371,7 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
         </div>
       </div>
 
-      {/* 6. Save Profile Button */}
+      {/* 7. Save Profile Button */}
       <button
         type="submit"
         className="w-full min-h-[54px] p-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-base rounded-2xl shadow-md flex items-center justify-center gap-2"
@@ -258,7 +380,7 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
         <span>{t.save}</span>
       </button>
 
-      {/* 7. Offline Storage State & Reset Action */}
+      {/* 8. Offline Storage State & Reset Action */}
       <div className="pt-4 border-t border-slate-200 text-center space-y-2">
         <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500">
           <Database className="w-3.5 h-3.5 text-emerald-600" />
@@ -275,3 +397,4 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
     </form>
   );
 };
+

@@ -187,7 +187,7 @@ export function App() {
             nearMissReports={nearMissReports}
             envReports={envReports}
             onRefreshData={refreshData}
-            onShowToast={(msg) => showToast(msg, 'success')}
+            onShowToast={(msg, type) => showToast(msg, type || 'success')}
           />
         )}
 
@@ -198,7 +198,7 @@ export function App() {
             onUpdateUser={(updated) => {
               setCurrentUser(updated);
             }}
-            onShowToast={(msg) => showToast(msg, 'success')}
+            onShowToast={(msg, type) => showToast(msg, type || 'success')}
           />
         )}
       </main>
