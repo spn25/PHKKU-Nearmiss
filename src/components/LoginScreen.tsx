@@ -130,7 +130,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white tracking-wide">KKU Nearmiss Safety</h1>
+            <h1 className="text-sm font-bold text-white tracking-wide">KKU Safe</h1>
             <p className="text-[10px] text-emerald-400 font-medium">OSHE Smart Safety</p>
           </div>
         </div>
@@ -156,7 +156,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <span>{isTh ? 'ระบบความปลอดภัย มหาวิทยาลัยขอนแก่น' : 'KKU Safety & OSHE Portal'}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              {isTh ? 'ลงชื่อเข้าใช้งาน KKU Nearmiss Safety' : 'Sign in to KKU Nearmiss Safety'}
+              {isTh ? 'ลงชื่อเข้าใช้งาน KKU Safe' : 'Sign in to KKU Safe'}
             </h2>
             <p className="text-xs sm:text-sm text-emerald-100/90 mt-1">
               {isTh
@@ -233,7 +233,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={isTh ? 'ตัวอย่าง: นายสมเกียรติ สาสุขดี' : 'e.g. Somkiat Sasookdee'}
+                placeholder={isTh ? 'ตัวอย่าง: สาสุข รักษ์ปลอดภัย' : 'e.g. Somkiat Sasookdee'}
                 className="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-slate-200 bg-slate-50/50 text-slate-800 text-sm focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-50 transition-all font-medium"
               />
             </div>
@@ -381,8 +381,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     ? '🛡️ ยืนยันเข้าสู่ระบบผู้ดูแลระบบ (Admin)'
                     : '🛡️ Sign In as Safety Admin'
                   : isTh
-                  ? '🚀 เข้าสู่ระบบใช้งาน KKU Nearmiss Safety'
-                  : '🚀 Enter KKU Nearmiss Safety'}
+                  ? '🚀 เข้าสู่ระบบใช้งาน KKU Safe'
+                  : '🚀 Enter KKU Safe'}
               </span>
               <ArrowRight className="w-4 h-4" />
             </button>
