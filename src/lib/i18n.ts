@@ -19,8 +19,8 @@ export const translations = {
     actionChecklistSub: 'ตรวจความปลอดภัยก่อนเริ่มงาน',
     actionEnvReport: 'แจ้งสิ่งแวดล้อม',
     actionEnvReportSub: 'ขยะ / สารเคมี / น้ำเสีย / ฝุ่น',
-    actionEmergency: 'แจ้งเหตุฉุกเฉิน SOS',
-    actionEmergencySub: 'โทรด่วน / เบอร์ฉุกเฉิน มข.',
+    actionEmergency: 'สายด่วนฉุกเฉิน มข.',
+    actionEmergencySub: 'โทรด่วน / เบอร์ฉุกเฉิน มข. 24 ชั่วโมง',
     actionSafetyManual: 'คู่มือความปลอดภัย',
     actionSafetyManualSub: 'PPE / วิธีปฏิบัติ / การปฐมพยาบาล',
     actionAiHazard: 'AI ตรวจจับความเสี่ยง',
@@ -112,7 +112,7 @@ export const translations = {
     catNoise: 'มลพิษทางเสียง',
 
     // Emergency
-    emergencyTitle: 'แจ้งเหตุฉุกเฉิน (Emergency SOS)',
+    emergencyTitle: 'สายด่วนฉุกเฉิน มข.',
     emergencyDesc: 'สายด่วนและเบอร์โทรฉุกเฉินภายในมหาวิทยาลัยขอนแก่น 24 ชั่วโมง',
     callNow: 'โทรออกทันที',
     emergencyTriggered: 'ส่งสัญญาณแจ้งเหตุฉุกเฉินแล้ว!',
@@ -167,8 +167,8 @@ export const translations = {
     actionChecklistSub: 'Pre-work safety verification',
     actionEnvReport: 'Environment Report',
     actionEnvReportSub: 'Waste / Chemicals / Spills / Dust',
-    actionEmergency: 'Emergency SOS',
-    actionEmergencySub: '24/7 KKU Hotlines & Quick Call',
+    actionEmergency: 'KKU Emergency Hotlines',
+    actionEmergencySub: '24/7 KKU Hotlines & Direct Call',
     actionSafetyManual: 'Safety Manual',
     actionSafetyManualSub: 'PPE / Guidelines / First Aid',
     actionAiHazard: 'AI Hazard Detection',
@@ -260,7 +260,7 @@ export const translations = {
     catNoise: 'Excessive Noise Pollution',
 
     // Emergency
-    emergencyTitle: 'Emergency SOS & Hotlines',
+    emergencyTitle: 'KKU Emergency Hotlines',
     emergencyDesc: '24/7 Khon Kaen University Emergency and Rescue Contacts',
     callNow: 'Call Immediately',
     emergencyTriggered: 'Emergency SOS Signal Triggered!',

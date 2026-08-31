@@ -19,8 +19,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Plus,
-  Bot,
-  MessageSquare,
 } from 'lucide-react';
 import {
   ScreenName,
@@ -304,43 +302,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </section>
 
-      {/* 3. Secondary Smart Tools (AI Hazard, PPE Scan, Dashboard, AI Chat) */}
+      {/* 3. Secondary Smart Tools (AI Hazard, PPE Scan, Dashboard) */}
       <section className="space-y-2.5">
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider px-1">
           {isTh ? 'เครื่องมือเสริม / Smart Assistants' : 'Smart Assistants'}
         </h3>
-        <div className="grid grid-cols-4 gap-2">
-          {/* AI Chat Advisor */}
-          <button
-            id="btn-home-ai-chat"
-            onClick={() => onNavigate('ai_chat')}
-            className="p-2.5 bg-white rounded-2xl border border-purple-100 shadow-sm hover:border-purple-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
-          >
-            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-              <Bot className="w-4 h-4" />
-            </div>
-            <span className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight">
-              {isTh ? 'ปรึกษา AI' : 'AI Advisor'}
-            </span>
-            <span className="text-[9px] text-purple-600 font-medium mt-0.5">
-              {isTh ? 'ถามตอบ' : 'Chat'}
-            </span>
-          </button>
-
+        <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
           {/* AI Hazard Detection */}
           <button
             id="btn-home-ai-hazard"
             onClick={() => onNavigate('ai_hazard')}
-            className="p-2.5 bg-white rounded-2xl border border-indigo-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
+            className="p-3 bg-white rounded-2xl border border-indigo-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
           >
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-              <Sparkles className="w-4 h-4" />
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <Sparkles className="w-5 h-5" />
             </div>
-            <span className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight">
+            <span className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">
               {isTh ? 'AI สแกนภาพ' : 'AI Vision'}
             </span>
-            <span className="text-[9px] text-indigo-600 font-medium mt-0.5">
-              {isTh ? 'วิเคราะห์' : 'Scan'}
+            <span className="text-[10px] text-indigo-600 font-medium mt-0.5">
+              {isTh ? 'วิเคราะห์อันตราย' : 'Scan Hazard'}
             </span>
           </button>
 
@@ -348,16 +329,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             id="btn-home-ppe-scan"
             onClick={() => onNavigate('ppe_scan')}
-            className="p-2.5 bg-white rounded-2xl border border-teal-100 shadow-sm hover:border-teal-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
+            className="p-3 bg-white rounded-2xl border border-teal-100 shadow-sm hover:border-teal-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
           >
-            <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-              <QrCode className="w-4 h-4" />
+            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <QrCode className="w-5 h-5" />
             </div>
-            <span className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight">
+            <span className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">
               {isTh ? 'สแกน PPE' : 'PPE QR'}
             </span>
-            <span className="text-[9px] text-teal-600 font-medium mt-0.5">
-              {isTh ? 'เช็กจุด' : 'Site'}
+            <span className="text-[10px] text-teal-600 font-medium mt-0.5">
+              {isTh ? 'เช็กจุดไซต์งาน' : 'Site Check'}
             </span>
           </button>
 
@@ -365,16 +346,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             id="btn-home-dashboard"
             onClick={() => onNavigate('dashboard')}
-            className="p-2.5 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
+            className="p-3 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
           >
-            <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-              <BarChart3 className="w-4 h-4" />
+            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <BarChart3 className="w-5 h-5" />
             </div>
-            <span className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight">
+            <span className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">
               {isTh ? 'แดชบอร์ด' : 'Dashboard'}
             </span>
-            <span className="text-[9px] text-slate-700 font-medium mt-0.5">
-              {isTh ? 'สถิติ' : 'Live Stats'}
+            <span className="text-[10px] text-slate-700 font-medium mt-0.5">
+              {isTh ? 'สถิติภาพรวม' : 'Live Stats'}
             </span>
           </button>
         </div>

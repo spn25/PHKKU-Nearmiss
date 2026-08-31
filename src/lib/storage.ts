@@ -15,6 +15,7 @@ import {
   SafetyManualItem,
   Language,
   ReportStatus,
+  UserRole,
 } from '../types';
 
 export const STORAGE_KEYS = {
@@ -27,9 +28,82 @@ export const STORAGE_KEYS = {
   EMERGENCY_CONTACTS: 'safemate_emergencyContacts',
   SAFETY_MANUAL: 'safemate_safetyManual',
   ADMIN_AUTH: 'safemate_admin_auth',
+  IS_LOGGED_IN: 'safemate_is_logged_in',
 };
 
 export const ADMIN_PASSCODE = '12345';
+
+export function isUserLoggedIn(): boolean {
+  try {
+    const loggedIn = localStorage.getItem(STORAGE_KEYS.IS_LOGGED_IN);
+    const userRaw = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+    if (loggedIn === 'true' && userRaw) {
+      return true;
+    }
+    // Also check if user has rememberMe enabled
+    if (userRaw) {
+      const user = JSON.parse(userRaw);
+      if (user && user.rememberMe && user.name && user.phone) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export function loginUser(params: {
+  name: string;
+  phone: string;
+  isAdmin: boolean;
+  rememberMe: boolean;
+  role?: UserRole;
+  facultyDepartment?: string;
+}): CurrentUser {
+  const current = getCurrentUser();
+  const newUser: CurrentUser = {
+    ...current,
+    userId: current.userId || `kku-${Date.now().toString().slice(-6)}`,
+    name: params.name.trim(),
+    phone: params.phone.trim(),
+    role: params.isAdmin ? 'จป. (เจ้าหน้าที่ความปลอดภัย)' : (params.role || 'บุคลากร'),
+    isAdmin: params.isAdmin,
+    rememberMe: params.rememberMe,
+    facultyDepartment: params.facultyDepartment || current.facultyDepartment || 'มหาวิทยาลัยขอนแก่น (KKU)',
+  };
+
+  saveCurrentUser(newUser);
+  localStorage.setItem(STORAGE_KEYS.IS_LOGGED_IN, 'true');
+  if (params.isAdmin) {
+    setAdminAuthenticated(true);
+  } else {
+    setAdminAuthenticated(false);
+  }
+
+  return newUser;
+}
+
+export function logoutUser(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.IS_LOGGED_IN);
+    setAdminAuthenticated(false);
+    
+    // Check if user had rememberMe disabled, if so clear the current user phone/name
+    const raw = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+    if (raw) {
+      const user = JSON.parse(raw);
+      if (!user.rememberMe) {
+        user.name = '';
+        user.phone = '';
+        user.rememberMe = false;
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+      }
+    }
+  } catch (err) {
+    console.error('Error logging out:', err);
+  }
+}
 
 export function isAdminAuthenticated(): boolean {
   try {
@@ -66,7 +140,9 @@ export function verifyAdminPasscode(passcode: string): boolean {
 const DEFAULT_USER: CurrentUser = {
   userId: 'kku-user-001',
   name: 'นายสาสุข รักปลอดภัย',
-  role: 'จป. (เจ้าหน้าที่ความปลอดภัย)',
+  phone: '081-234-5678',
+  role: 'บุคลากร',
+  facultyDepartment: 'กองอาคารและสถานที่ มข.',
   faculty: 'กองอาคารและสถานที่ มหาวิทยาลัยขอนแก่น',
   language: 'th',
 };
@@ -438,8 +514,25 @@ export function getCurrentUser(): CurrentUser {
     const raw = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
     if (raw) {
       const parsed = JSON.parse(raw);
+      let changed = false;
       if (parsed && parsed.name && parsed.name.includes('สมชาย')) {
         parsed.name = 'นายสาสุข รักปลอดภัย';
+        changed = true;
+      }
+      // Migrate legacy or mismatched roles for non-admin users
+      if (!parsed.isAdmin && !isAdminAuthenticated()) {
+        if (parsed.role === 'worker' || parsed.role === 'staff' || parsed.role === 'จป. (เจ้าหน้าที่ความปลอดภัย)') {
+          parsed.role = 'บุคลากร';
+          changed = true;
+        } else if (parsed.role === 'student') {
+          parsed.role = 'นักศึกษา';
+          changed = true;
+        } else if (!parsed.role) {
+          parsed.role = 'บุคลากร';
+          changed = true;
+        }
+      }
+      if (changed) {
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(parsed));
       }
       return parsed;

@@ -1,54 +1,30 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  PhoneCall,
-  AlertOctagon,
   Shield,
   Ambulance,
   Flame,
   Wrench,
-  CheckCircle2,
   PhoneForwarded,
+  PhoneCall,
 } from 'lucide-react';
 import { CurrentUser, ScreenName, EmergencyContact } from '../../types';
 import { translations } from '../../lib/i18n';
-import { getEmergencyContacts, triggerEmergencyAlert } from '../../lib/storage';
+import { getEmergencyContacts } from '../../lib/storage';
 
 interface EmergencyScreenProps {
   currentUser: CurrentUser;
   onNavigate: (screen: ScreenName) => void;
-  onEmergencyTriggered: (msg: string) => void;
+  onEmergencyTriggered?: (msg: string) => void;
 }
 
 export const EmergencyScreen: React.FC<EmergencyScreenProps> = ({
   currentUser,
-  onEmergencyTriggered,
 }) => {
   const lang = currentUser.language || 'th';
   const t = translations[lang];
   const isTh = lang === 'th';
 
   const contacts: EmergencyContact[] = getEmergencyContacts();
-  const [sosTriggered, setSosTriggered] = useState(false);
-  const [sosNote, setSosNote] = useState('');
-
-  const handleTriggerSOS = () => {
-    // Attempt haptic feedback vibration if supported
-    if ('vibrate' in navigator) {
-      try {
-        navigator.vibrate([300, 100, 300, 100, 500]);
-      } catch {
-        // ignore
-      }
-    }
-
-    triggerEmergencyAlert(undefined, sosNote);
-    setSosTriggered(true);
-    onEmergencyTriggered(
-      isTh
-        ? '🚨 ส่งสัญญาณฉุกเฉิน SOS ไปยังศูนย์ รปภ. มข. เรียบร้อยแล้ว!'
-        : '🚨 Emergency SOS Signal Dispatched to KKU Security!'
-    );
-  };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -64,54 +40,31 @@ export const EmergencyScreen: React.FC<EmergencyScreenProps> = ({
   };
 
   return (
-    <div className="space-y-5 pb-24 max-w-xl mx-auto">
-      {/* 1. Giant SOS Panic Button */}
-      <div className="bg-gradient-to-br from-red-950 via-red-900 to-rose-950 text-white rounded-3xl p-6 shadow-2xl border-2 border-red-500/60 text-center space-y-4 relative overflow-hidden">
-        <div className="flex items-center justify-center gap-2 text-rose-300 text-xs font-bold uppercase tracking-wider">
-          <AlertOctagon className="w-4 h-4 text-rose-400" />
-          <span>KKU 24/7 Rapid Emergency Response</span>
-        </div>
-
-        <h2 className="text-2xl font-black tracking-tight text-white">
-          {t.emergencyTitle}
-        </h2>
-        <p className="text-xs text-rose-200 max-w-xs mx-auto">
-          {t.emergencyDesc}
-        </p>
-
-        {/* Big Pulsating Action Button */}
-        <button
-          id="btn-trigger-sos-giant"
-          onClick={handleTriggerSOS}
-          className="w-36 h-36 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 active:scale-95 text-white font-black text-xl shadow-2xl mx-auto flex flex-col items-center justify-center gap-1 border-4 border-white/40 ring-8 ring-red-500/30 transition-all cursor-pointer animate-pulse"
-        >
-          <PhoneCall className="w-10 h-10" />
-          <span>SOS</span>
-          <span className="text-[10px] font-normal tracking-wide opacity-90">
-            {isTh ? 'แตะแจ้งเหตุทันที' : 'TAP TO ALERT'}
-          </span>
-        </button>
-
-        {sosTriggered && (
-          <div className="p-3 bg-red-800/90 border border-red-400 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 animate-in zoom-in-95">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>
-              {isTh
-                ? '✓ สัญญาณเตือนภัย SOS ถูกบันทึกและส่งรายงานไปยังเจ้าหน้าที่แล้ว'
-                : '✓ SOS Alarm Dispatched to Response Center'}
-            </span>
+    <div className="space-y-4 pb-24 max-w-xl mx-auto">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-red-900 via-rose-900 to-red-950 text-white rounded-3xl p-5 shadow-lg border border-red-800/60 relative overflow-hidden">
+        <div className="relative z-10 space-y-1.5">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-800/80 border border-red-500/40 text-[11px] font-bold text-rose-200">
+            <PhoneCall className="w-3.5 h-3.5 text-rose-300" />
+            <span>{isTh ? 'สายด่วนฉุกเฉิน 24 ชั่วโมง มหาวิทยาลัยขอนแก่น' : 'KKU 24/7 Rapid Emergency Response'}</span>
           </div>
-        )}
+          <h2 className="text-xl font-black tracking-tight text-white">
+            {t.emergencyTitle}
+          </h2>
+          <p className="text-xs text-rose-200/90 leading-relaxed">
+            {t.emergencyDesc}
+          </p>
+        </div>
       </div>
 
-      {/* 2. Direct KKU Emergency Contact Directory */}
+      {/* Direct KKU Emergency Contact Directory */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-            {isTh ? 'สายด่วนฉุกเฉิน มข. (โทรออกทันที)' : 'KKU Emergency Contacts'}
+          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            {isTh ? 'รายชื่อสายด่วนฉุกเฉิน มข. (แตะเพื่อโทรออกทันที)' : 'KKU Emergency Contacts (Tap to Call)'}
           </h3>
           <span className="text-xs font-semibold text-emerald-700">
-            {isTh ? 'บริการ 24 ชั่วโมง' : '24/7 Available'}
+            {isTh ? 'บริการ 24 ชม.' : '24/7 Available'}
           </span>
         </div>
 

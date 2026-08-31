@@ -12,10 +12,6 @@ import {
   Building,
   Sparkles,
   Database,
-  Lock,
-  Unlock,
-  KeyRound,
-  ShieldCheck,
   LogOut,
 } from 'lucide-react';
 import { CurrentUser, ScreenName, UserRole, Language } from '../../types';
@@ -24,40 +20,48 @@ import {
   saveCurrentUser,
   resetAllDataToDefault,
   isAdminAuthenticated,
-  setAdminAuthenticated,
 } from '../../lib/storage';
-import { AdminPasscodeModal } from '../AdminPasscodeModal';
 
 interface ProfileSettingsScreenProps {
   currentUser: CurrentUser;
   onNavigate: (screen: ScreenName) => void;
   onUpdateUser: (user: CurrentUser) => void;
   onShowToast: (msg: string, type?: 'success' | 'danger' | 'info') => void;
+  onLogout?: () => void;
 }
 
 export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
   currentUser,
   onUpdateUser,
   onShowToast,
+  onLogout,
 }) => {
   const lang = currentUser.language || 'th';
   const t = translations[lang];
   const isTh = lang === 'th';
 
+  const normalizeRole = (r: UserRole | string | undefined): UserRole => {
+    if (r === 'worker' || r === 'staff') return 'บุคลากร';
+    if (r === 'student') return 'นักศึกษา';
+    if (r === 'safety_officer' || r === 'admin') return 'จป. (เจ้าหน้าที่ความปลอดภัย)';
+    return (r as UserRole) || 'บุคลากร';
+  };
+
   const [name, setName] = useState(currentUser.name);
-  const [role, setRole] = useState<UserRole>(currentUser.role);
+  const [phone, setPhone] = useState(currentUser.phone || '');
+  const [role, setRole] = useState<UserRole>(() => normalizeRole(currentUser.role));
   const [facultyDepartment, setFacultyDepartment] = useState(currentUser.facultyDepartment);
   const [emergencyContactName, setEmergencyContactName] = useState(currentUser.emergencyContactName);
   const [emergencyContactPhone, setEmergencyContactPhone] = useState(currentUser.emergencyContactPhone);
 
-  const [isAdmin, setIsAdmin] = useState<boolean>(isAdminAuthenticated());
-  const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
+  const [isAdmin] = useState<boolean>(isAdminAuthenticated());
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     const updated: CurrentUser = {
       ...currentUser,
       name,
+      phone,
       role,
       facultyDepartment,
       emergencyContactName,
@@ -82,35 +86,19 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
     }
   };
 
-  const handleAdminSuccess = () => {
-    setIsAdmin(true);
-    setAdminAuthenticated(true);
-    onShowToast(
-      isTh
-        ? '✓ เข้าสู่ระบบสิทธิ์แอดมินสำเร็จ (สามารถแก้ไขสถานะปัญหาได้)'
-        : '✓ Admin access authorized (full permissions)',
-      'success'
-    );
-  };
-
-  const handleAdminLogout = () => {
-    setAdminAuthenticated(false);
-    setIsAdmin(false);
-    onShowToast(
-      isTh
-        ? '🔒 ออกจากระบบแอดมินแล้ว (กลับสู่สิทธิ์ผู้ใช้ทั่วไป)'
-        : '🔒 Switched to General User permissions',
-      'info'
-    );
-  };
-
-  const roles: { id: UserRole; labelTh: string; labelEn: string }[] = [
-    { id: 'worker', labelTh: 'เจ้าหน้าที่ภาคสนาม / ช่างเทคนิค', labelEn: 'Field Worker / Technician' },
-    { id: 'student', labelTh: 'นักศึกษา / นักวิจัยในห้องแล็บ', labelEn: 'Student / Lab Researcher' },
-    { id: 'staff', labelTh: 'บุคลากร / อาจารย์ประจำคณะ', labelEn: 'University Staff / Faculty' },
-    { id: 'safety_officer', labelTh: 'เจ้าหน้าที่ความปลอดภัย (จป.)', labelEn: 'Safety Officer (OSHE)' },
-    { id: 'admin', labelTh: 'ผู้ดูแลระบบส่วนกลาง', labelEn: 'System Administrator' },
+  const baseRoles: { id: UserRole; labelTh: string; labelEn: string }[] = [
+    { id: 'บุคลากร', labelTh: '1. บุคลากร (Staff / Personnel)', labelEn: '1. Staff / Personnel' },
+    { id: 'อาจารย์', labelTh: '2. อาจารย์ (Faculty / Lecturer)', labelEn: '2. Faculty / Lecturer' },
+    { id: 'นักศึกษา', labelTh: '3. นักศึกษา (Student)', labelEn: '3. Student' },
+    { id: 'บุคคลทั่วไป', labelTh: '4. บุคคลทั่วไป (General Public / Visitor)', labelEn: '4. General Public / Visitor' },
   ];
+
+  const roles = isAdmin || role === 'จป. (เจ้าหน้าที่ความปลอดภัย)'
+    ? [
+        ...baseRoles,
+        { id: 'จป. (เจ้าหน้าที่ความปลอดภัย)', labelTh: 'จป. (เจ้าหน้าที่ความปลอดภัย) / แอดมิน', labelEn: 'Safety Officer (OSHE) / Admin' },
+      ]
+    : baseRoles;
 
   const badges = [
     { id: 'badge-1', title: isTh ? 'นักรายงานความปลอดภัย' : 'Safety Reporter', icon: '⭐', desc: isTh ? 'แจ้งรายงาน Near Miss สม่ำเสมอ' : 'Active Near Miss Reporter', unlocked: true },
@@ -121,14 +109,6 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
 
   return (
     <form onSubmit={handleSave} className="space-y-5 pb-24 max-w-xl mx-auto">
-      {/* Admin Passcode Modal */}
-      <AdminPasscodeModal
-        isOpen={isPasscodeModalOpen}
-        onClose={() => setIsPasscodeModalOpen(false)}
-        onSuccess={handleAdminSuccess}
-        isTh={isTh}
-      />
-
       {/* 1. Header with Avatar */}
       <div className="bg-gradient-to-r from-slate-900 to-teal-950 text-white rounded-3xl p-6 shadow-lg border border-slate-800 flex items-center gap-4">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-black text-2xl flex items-center justify-center shadow-md">
@@ -154,78 +134,7 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
         </div>
       </div>
 
-      {/* 2. Admin Authentication / Permission Control Card */}
-      <div
-        className={`rounded-3xl p-5 shadow-sm border transition-all ${
-          isAdmin
-            ? 'bg-gradient-to-br from-slate-900 to-indigo-950 text-white border-indigo-500/40'
-            : 'bg-white border-slate-200 text-slate-800'
-        }`}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div
-              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                isAdmin
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              {isAdmin ? (
-                <ShieldCheck className="w-6 h-6" />
-              ) : (
-                <Lock className="w-5 h-5" />
-              )}
-            </div>
-            <div>
-              <h3 className="text-xs font-black uppercase tracking-wider flex items-center gap-2">
-                <span>
-                  {isAdmin
-                    ? (isTh ? 'สิทธิ์ผู้ดูแลระบบ (Admin Authorized)' : 'Admin Authorized Mode')
-                    : (isTh ? 'สิทธิ์ผู้ใช้งานทั่วไป (General User)' : 'General User Access')}
-                </span>
-              </h3>
-              <p
-                className={`text-xs mt-1 leading-relaxed ${
-                  isAdmin ? 'text-slate-300' : 'text-slate-500'
-                }`}
-              >
-                {isAdmin
-                  ? (isTh
-                      ? 'คุณกำลังใช้สิทธิ์แอดมิน สามารถปรับเปลี่ยนสถานะการดำเนินงาน (รอดำเนินการ, กำลังทำ, แก้ไขแล้ว) และลบรายงานได้'
-                      : 'You have full admin rights to edit task resolution statuses and manage incident reports.')
-                  : (isTh
-                      ? 'ผู้ใช้ทั่วไปสามารถแจ้งปัญหาและดูรายการได้เท่านั้น หากต้องการสิทธิ์ปรับสถานะ โปรดกรอกรหัสผ่านแอดมิน'
-                      : 'General users can only report and view items. Enter admin passcode to unlock status management.')}
-              </p>
-            </div>
-          </div>
-
-          <div className="shrink-0 pt-0.5">
-            {isAdmin ? (
-              <button
-                type="button"
-                onClick={handleAdminLogout}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 border border-slate-600 transition-all flex items-center gap-1.5"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>{isTh ? 'ออกจากแอดมิน' : 'Lock'}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsPasscodeModalOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-sm"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>{isTh ? 'กรุณาใส่รหัส' : 'Enter Passcode'}</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Language Switcher Card */}
+      {/* 2. Language Switcher Card */}
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-3">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Globe className="w-4 h-4 text-emerald-600" />
@@ -297,6 +206,21 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Phone */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-700">
+            {isTh ? 'เบอร์โทรศัพท์ติดต่อ' : 'Phone Number'}
+          </label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="08X-XXX-XXXX"
+            className="w-full min-h-[48px] px-4 py-2.5 rounded-2xl border-2 border-slate-200 bg-white text-sm font-mono focus:outline-none focus:border-emerald-500"
+            required
+          />
         </div>
 
         {/* Faculty / Dept */}
@@ -380,7 +304,19 @@ export const ProfileSettingsScreen: React.FC<ProfileSettingsScreenProps> = ({
         <span>{t.save}</span>
       </button>
 
-      {/* 8. Offline Storage State & Reset Action */}
+      {/* 8. Log Out / Switch Account */}
+      {onLogout && (
+        <button
+          type="button"
+          onClick={onLogout}
+          className="w-full min-h-[50px] p-3.5 bg-slate-100 hover:bg-red-50 active:scale-95 text-slate-700 hover:text-red-700 border-2 border-slate-200 hover:border-red-200 font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-4 h-4 text-red-500" />
+          <span>{isTh ? 'สลับผู้ใช้งาน / ออกจากระบบ (Switch User / Log Out)' : 'Switch User / Log Out'}</span>
+        </button>
+      )}
+
+      {/* 9. Offline Storage State & Reset Action */}
       <div className="pt-4 border-t border-slate-200 text-center space-y-2">
         <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500">
           <Database className="w-3.5 h-3.5 text-emerald-600" />

@@ -50,22 +50,23 @@ async function startServer() {
       }
 
       const systemInstruction = `
-คุณคือ "AI Safety & Environment Advisor" ประจำระบบ KKU Nearmiss Safety ของมหาวิทยาลัยขอนแก่น (มข.)
-บทบาทของคุณคือให้คำแนะนำที่ถูกต้อง แม่นยำ รวดเร็ว และปฏิบัติได้จริง ด้าน:
-1. ความปลอดภัย อาชีวอนามัย และสภาพแวดล้อมในการทำงาน (OSHE / OSHA)
-2. การประเมินและจำแนกเหตุการณ์: Near Miss (เกือบเกิดอุบัติเหตุ), Unsafe Act (พฤติกรรมเสี่ยง), Unsafe Condition (สภาพแวดล้อมเสี่ยง)
-3. การจัดการสารเคมีหก, ไฟฟ้าลัดวงจร, งานบนที่สูง, งานเชื่อม, งานก่อสร้าง, งานห้องแล็บวิจัย
-4. อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE)
-5. สุขภาพ: โรคลมแดด (Heat Stress), กฎพักสายตา 20-20-20, PM2.5, การดื่มน้ำ
-6. การปฐมพยาบาลเบื้องต้น (First Aid)
-7. ปัญหาสิ่งแวดล้อม: ขยะอันตราย, น้ำเสีย, คราบน้ำมัน, ฝุ่นควัน
+คุณคือ "AI Safety & Environment Advisor" ผู้เชี่ยวชาญระดับสูงด้านความปลอดภัย อาชีวอนามัย และสิ่งแวดล้อม (OSHE) ประจำระบบ KKU Nearmiss Safety มหาวิทยาลัยขอนแก่น
+คุณมีความสามารถในการสืบค้นข้อมูลภายนอก (Real-time Google Search Grounding) เพื่อดึงข้อมูลกฎหมาย มาตรฐานความปลอดภัยสากล (OSHA, NIOSH, ISO 45001, WHO), กฎกระทรวงแรงงานไทย, ข้อมูลเอกสารความปลอดภัยสารเคมี (SDS / Safety Data Sheet), ข้อมูลสภาพแวดล้อม, ค่าดัชนีความร้อน (Heat Index), และแนวทางปฏิบัติล่าสุดมาตอบร่วมด้วยเสมอ
+
+ขอบเขตการให้คำปรึกษา:
+1. การประเมินและจำแนกเหตุการณ์: Near Miss (เกือบเกิดอุบัติเหตุ), Unsafe Act (พฤติกรรมเสี่ยง), Unsafe Condition (สภาพแวดล้อมเสี่ยง)
+2. ขั้นตอนการจัดการสารเคมีรั่วไหล, ไฟฟ้าลัดวงจร, งานบนที่สูง, งานเชื่อม, งานก่อสร้าง, งานห้องแล็บวิจัย
+3. อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ตามมาตรฐาน มอก. / ANSI / EN
+4. อาชีวอนามัย: โรคลมแดด (Heat Stroke), กฎพักสายตา 20-20-20, PM2.5, การยศาสตร์ (Ergonomics)
+5. การปฐมพยาบาลเบื้องต้น (First Aid) ที่ถูกต้องตามหลักการแพทย์
+6. ปัญหาสิ่งแวดล้อม: ขยะอันตราย, น้ำเสีย, สารเคมีตกค้าง, มลพิษทางเสียงและอากาศ
 
 สไตล์การตอบ:
-- ตอบด้วยภาษาไทยที่สุภาพ กระชับ อ่านเข้าใจง่าย เป็นข้อๆ ชัดเจน
-- หากผู้ใช้ถามภาษาอังกฤษ ให้ตอบเป็นภาษาอังกฤษ
-- หากเป็นเรื่องอันตรายเร่งด่วน ให้เตือนความปลอดภัยทันที และแนะนำเบอร์ฉุกเฉิน มข. (เช่น ศูนย์กู้ชีพศรีนครินทร์ 043-363000, รปภ. มข. 043-202222)
-- แนะนำขั้นตอนที่ผู้ใช้สามารถนำไปปฏิบัติได้ทันที
-- หลีกเลี่ยงข้อความยาวเยิ่นเย้อ เน้น Actionable steps
+- ดึงข้อมูลอัปเดตและข้อเท็จจริงภายนอกมาประกอบคำแนะนำเสมอ
+- ตอบด้วยภาษาไทยที่สุภาพ ชัดเจน กระชับ จัดรูปแบบเป็นหัวข้อและข้อๆ ให้อ่านง่าย
+- หากผู้ใช้ถามภาษาอังกฤษ ให้ตอบเป็นภาษาอังกฤษอย่างถูกต้อง
+- หากเป็นเรื่องอันตรายเร่งด่วน ให้เตือนความปลอดภัยทันที และแจ้งเบอร์ฉุกเฉิน มข. (เช่น ศูนย์กู้ชีพศรีนครินทร์ 043-363000 หรือ 1669, รปภ. มข. 043-202222)
+- แนะนำขั้นตอนที่ปฏิบัติได้จริงทันที (Actionable Step-by-Step)
       `.trim();
 
       // Format previous chat history for multi-turn context
@@ -94,11 +95,36 @@ async function startServer() {
         config: {
           systemInstruction,
           temperature: 0.7,
+          tools: [{ googleSearch: {} }],
         },
       });
 
       const reply = response.text || 'ขออภัย ไม่สามารถประมวลผลคำตอบได้ในขณะนี้';
-      return res.json({ reply, isFallback: false });
+
+      // Extract search grounding metadata if available
+      const candidate = response.candidates?.[0];
+      const groundingMetadata = candidate?.groundingMetadata;
+      const webSearchQueries: string[] = groundingMetadata?.webSearchQueries || [];
+      const searchChunks = groundingMetadata?.groundingChunks || [];
+
+      const sources: { title: string; url: string }[] = [];
+      if (Array.isArray(searchChunks)) {
+        for (const chunk of searchChunks) {
+          if (chunk?.web?.uri) {
+            sources.push({
+              title: chunk.web.title || chunk.web.uri,
+              url: chunk.web.uri,
+            });
+          }
+        }
+      }
+
+      return res.json({
+        reply,
+        isFallback: false,
+        sources,
+        webSearchQueries,
+      });
     } catch (err: any) {
       console.error('Gemini chat error:', err);
       return res.status(500).json({

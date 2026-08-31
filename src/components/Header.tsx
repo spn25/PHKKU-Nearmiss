@@ -1,13 +1,15 @@
 import React from 'react';
-import { Shield, Globe, PhoneCall, ChevronLeft, Wifi } from 'lucide-react';
+import { Shield, Globe, PhoneCall, ChevronLeft, Wifi, LogOut, ShieldCheck, User } from 'lucide-react';
 import { ScreenName, CurrentUser, Language } from '../types';
 import { translations } from '../lib/i18n';
+import { isAdminAuthenticated } from '../lib/storage';
 
 interface HeaderProps {
   currentScreen: ScreenName;
   onNavigate: (screen: ScreenName) => void;
   currentUser: CurrentUser;
   onLanguageChange: (lang: Language) => void;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -15,9 +17,11 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   currentUser,
   onLanguageChange,
+  onLogout,
 }) => {
   const lang = currentUser.language || 'th';
   const t = translations[lang];
+  const isAdmin = isAdminAuthenticated() || currentUser.isAdmin;
 
   const getScreenTitle = (): { title: string; subtitle: string } => {
     switch (currentScreen) {
@@ -40,11 +44,6 @@ export const Header: React.FC<HeaderProps> = ({
         return { title: t.manualTitle, subtitle: t.manualDesc };
       case 'dashboard':
         return { title: t.dashboardTitle, subtitle: t.dashboardDesc };
-      case 'ai_chat':
-        return {
-          title: lang === 'th' ? 'พูดคุยปรึกษากับ AI ความปลอดภัย' : 'Safety AI Advisor',
-          subtitle: lang === 'th' ? 'ผู้ช่วยตอบคำถามความปลอดภัย สารเคมี และการปฐมพยาบาล' : 'AI Safety & First Aid Advisor',
-        };
       case 'profile':
       case 'settings':
         return { title: t.settingsTitle, subtitle: t.profileSection };
@@ -92,6 +91,19 @@ export const Header: React.FC<HeaderProps> = ({
               <span>SOS</span>
             </button>
           )}
+
+          {/* Switch User / Logout Quick Button */}
+          {onLogout && (
+            <button
+              id="btn-header-logout"
+              onClick={onLogout}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800/90 hover:bg-red-950/60 hover:text-red-300 text-slate-300 border border-slate-700 hover:border-red-800/80 transition-all font-medium"
+              title={lang === 'th' ? 'สลับผู้ใช้งาน / ออกจากระบบ' : 'Switch User / Log Out'}
+            >
+              <LogOut className="w-3 h-3" />
+              <span className="hidden sm:inline">{lang === 'th' ? 'สลับผู้ใช้' : 'Switch'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -118,18 +130,22 @@ export const Header: React.FC<HeaderProps> = ({
               {isHome ? (
                 <>
                   <span>KKU Nearmiss Safety</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700 font-normal">
-                    OSHE
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${
+                    isAdmin
+                      ? 'bg-amber-900/60 text-amber-300 border-amber-700/80'
+                      : 'bg-emerald-900/60 text-emerald-300 border-emerald-700'
+                  }`}>
+                    {isAdmin ? 'Admin จป.' : 'OSHE'}
                   </span>
                 </>
               ) : (
                 <span>{screenInfo.title}</span>
               )}
             </h1>
-            <p className="text-xs text-slate-400 line-clamp-1">
+            <p className="text-xs text-slate-400 line-clamp-1 flex items-center gap-1.5">
               {isHome ? (
                 <span>
-                  {currentUser.name} • {currentUser.role}
+                  {currentUser.name} {currentUser.phone ? `(${currentUser.phone})` : ''} • {currentUser.role}
                 </span>
               ) : (
                 screenInfo.subtitle
@@ -142,9 +158,14 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="btn-header-profile"
           onClick={() => onNavigate('settings')}
-          className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-800 transition-colors text-right"
+          className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-800 transition-colors text-right group"
+          title={lang === 'th' ? 'โปรไฟล์และตั้งค่า' : 'Profile & Settings'}
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-bold text-sm shadow-inner">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-inner transition-transform group-hover:scale-105 ${
+            isAdmin
+              ? 'bg-gradient-to-tr from-amber-600 to-orange-500 border border-amber-400/40'
+              : 'bg-gradient-to-tr from-emerald-600 to-teal-500'
+          }`}>
             {currentUser.name ? currentUser.name.charAt(0) : 'S'}
           </div>
         </button>
@@ -152,3 +173,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+

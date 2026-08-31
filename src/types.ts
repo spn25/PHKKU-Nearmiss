@@ -1,38 +1,35 @@
 /**
- * SafeMate Types & Interfaces
- * ระบบ AI Safety & Environment Assistant สำหรับสถานศึกษาและองค์กร
+ * KKU Nearmiss Safety Types & Interfaces
+ * ระบบ KKU Nearmiss Safety สำหรับมหาวิทยาลัยขอนแก่น
  */
 
 export type Language = 'th' | 'en';
 
 export type UserRole =
+  | 'บุคลากร'
+  | 'อาจารย์'
+  | 'นักศึกษา'
+  | 'บุคคลทั่วไป'
+  | 'จป. (เจ้าหน้าที่ความปลอดภัย)'
   | 'worker'
   | 'student'
   | 'staff'
   | 'safety_officer'
   | 'admin'
-  | 'นักศึกษา'
-  | 'อาจารย์'
-  | 'บุคลากร'
-  | 'กองอาคารสถานที่'
-  | 'เจ้าหน้าที่รักษาความปลอดภัย'
-  | 'จป. (เจ้าหน้าที่ความปลอดภัย)'
-  | 'ฝ่ายสิ่งแวดล้อม/อาคารสีเขียว'
-  | 'พนักงานทำความสะอาด/แม่บ้าน'
-  | 'ผู้รับเหมา/ช่างซ่อมบำรุง'
-  | 'ผู้ดูแลหอพักนักศึกษา'
-  | 'นักวิจัย/เจ้าหน้าที่ห้องแล็บ'
-  | 'อื่น ๆ';
+  | string;
 
 export interface CurrentUser {
   userId: string;
   name: string;
+  phone?: string;
   role: UserRole;
   facultyDepartment?: string;
   faculty?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   language: Language;
+  isAdmin?: boolean;
+  rememberMe?: boolean;
 }
 
 export type ScreenName =
@@ -41,7 +38,6 @@ export type ScreenName =
   | 'checklist'
   | 'ppe_scan'
   | 'ai_hazard'
-  | 'ai_chat'
   | 'health'
   | 'environment'
   | 'env_report'
@@ -132,11 +128,18 @@ export interface EnvReport {
   resolvedAt?: string;
 }
 
+export interface ChatSource {
+  title?: string;
+  url?: string;
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'ai';
   text: string;
   timestamp: string;
+  sources?: ChatSource[];
+  webSearchQueries?: string[];
   suggestedAction?: {
     label: string;
     screen: ScreenName;
