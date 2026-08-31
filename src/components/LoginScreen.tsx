@@ -40,17 +40,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLanguageChange,
 }) => {
   const [loginMode, setLoginMode] = useState<'general' | 'admin'>('general');
-  const [name, setName] = useState(currentUser.name || '');
-  const [phone, setPhone] = useState(currentUser.phone || '');
+  
+  // Only prefill name and phone if user previously logged in and checked "rememberMe"
+  const isRemembered = Boolean(currentUser?.rememberMe && currentUser?.name && currentUser?.phone);
+  const [name, setName] = useState(isRemembered ? currentUser.name : '');
+  const [phone, setPhone] = useState(isRemembered ? currentUser.phone : '');
   const [userStatus, setUserStatus] = useState<UserRole>(
-    (currentUser.role as UserRole) || 'บุคลากร'
+    (currentUser?.role as UserRole) || 'บุคลากร'
   );
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(isRemembered);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const lang = currentUser.language || 'th';
+  const lang = currentUser?.language || 'th';
   const isTh = lang === 'th';
 
   const handleLogin = (e: React.FormEvent) => {
@@ -230,7 +233,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={isTh ? 'เช่น นายสมเกียรติ สาสุขดี' : 'e.g. Somkiat Sasookdee'}
+                placeholder={isTh ? 'ตัวอย่าง: นายสมเกียรติ สาสุขดี' : 'e.g. Somkiat Sasookdee'}
                 className="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-slate-200 bg-slate-50/50 text-slate-800 text-sm focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-50 transition-all font-medium"
               />
             </div>
@@ -252,7 +255,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder={isTh ? 'เช่น 081-234-5678' : 'e.g. 081-234-5678'}
+                placeholder={isTh ? 'ตัวอย่าง: 081-234-5678' : 'e.g. 081-234-5678'}
                 className="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-slate-200 bg-slate-50/50 text-slate-800 text-sm focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-50 transition-all font-medium"
               />
             </div>

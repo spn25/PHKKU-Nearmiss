@@ -38,12 +38,8 @@ export function isUserLoggedIn(): boolean {
     const loggedIn = localStorage.getItem(STORAGE_KEYS.IS_LOGGED_IN);
     const userRaw = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
     if (loggedIn === 'true' && userRaw) {
-      return true;
-    }
-    // Also check if user has rememberMe enabled
-    if (userRaw) {
       const user = JSON.parse(userRaw);
-      if (user && user.rememberMe && user.name && user.phone) {
+      if (user && user.name && user.phone) {
         return true;
       }
     }
@@ -139,12 +135,13 @@ export function verifyAdminPasscode(passcode: string): boolean {
 
 const DEFAULT_USER: CurrentUser = {
   userId: 'kku-user-001',
-  name: 'นายสาสุข รักปลอดภัย',
-  phone: '081-234-5678',
+  name: '',
+  phone: '',
   role: 'บุคลากร',
-  facultyDepartment: 'กองอาคารและสถานที่ มข.',
-  faculty: 'กองอาคารและสถานที่ มหาวิทยาลัยขอนแก่น',
+  facultyDepartment: 'มหาวิทยาลัยขอนแก่น (KKU)',
+  faculty: 'มหาวิทยาลัยขอนแก่น',
   language: 'th',
+  rememberMe: false,
 };
 
 const DEFAULT_PPE_SITES: PPESite[] = [
@@ -474,8 +471,11 @@ export function initLocalData(): void {
     } else {
       try {
         const parsed = JSON.parse(existingUserRaw);
-        if (parsed.name && (parsed.name.includes('สมชาย') || parsed.userId === 'kku-user-001')) {
-          parsed.name = 'นายสาสุข รักปลอดภัย';
+        // If the user had not explicitly checked rememberMe, ensure name and phone are clean
+        if (parsed && !parsed.rememberMe && (parsed.name === 'นายสาสุข รักปลอดภัย' || parsed.userId === 'kku-user-001' || parsed.name.includes('สมชาย'))) {
+          parsed.name = '';
+          parsed.phone = '';
+          parsed.rememberMe = false;
           localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(parsed));
         }
       } catch {
@@ -515,8 +515,10 @@ export function getCurrentUser(): CurrentUser {
     if (raw) {
       const parsed = JSON.parse(raw);
       let changed = false;
-      if (parsed && parsed.name && parsed.name.includes('สมชาย')) {
-        parsed.name = 'นายสาสุข รักปลอดภัย';
+      if (parsed && !parsed.rememberMe && (parsed.name === 'นายสาสุข รักปลอดภัย' || parsed.name.includes('สมชาย'))) {
+        parsed.name = '';
+        parsed.phone = '';
+        parsed.rememberMe = false;
         changed = true;
       }
       // Migrate legacy or mismatched roles for non-admin users
