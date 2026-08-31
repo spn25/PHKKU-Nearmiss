@@ -200,7 +200,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               }`}
             >
               <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>{isTh ? '2. ผู้ดูแลระบบ / จป.' : '2. Admin / Safety'}</span>
+              <span>{isTh ? '2. ผู้ดูแลระบบ' : '2. Admin / Safety'}</span>
             </button>
           </div>
         </div>
@@ -393,7 +393,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         <div className="bg-slate-50 border-t border-slate-200/80 p-4 sm:p-5">
           <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">
             <HelpCircle className="w-3.5 h-3.5" />
-            <span>{isTh ? 'ตัวเลือกทดลองใช้งานด่วน (Demo Quick-Fill):' : 'Demo Fast Fill:'}</span>
+            <span>{isTh ? 'ตัวเลือกใช้งาน (Quick-Fill):' : 'Fast Fill:'}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -402,7 +402,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
             >
               <User className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{isTh ? 'ผู้ใช้ทั่วไป (Demo)' : 'General User'}</span>
+              <span>{isTh ? 'ผู้ใช้งานทั่วไป' : 'General User'}</span>
             </button>
 
             <button
@@ -411,7 +411,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               className="px-3 py-2 rounded-xl bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 hover:border-amber-300 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-              <span>{isTh ? 'แอดมิน จป. (Demo)' : 'Admin (Demo)'}</span>
+              <span>{isTh ? 'ผู้ดูแลระบบ' : 'Admin (Demo)'}</span>
             </button>
           </div>
         </div>
