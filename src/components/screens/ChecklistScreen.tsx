@@ -180,6 +180,48 @@ const CHECKLIST_TEMPLATES: Record<string, ChecklistItem[]> = {
       required: true,
     },
   ],
+  other: [
+    {
+      id: 'o-1',
+      label: 'สวมใส่อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) เหมาะสมกับลักษณะงาน',
+      labelEn: 'Wear appropriate PPE suitable for the specific task and working environment',
+      category: 'ppe',
+      checked: false,
+      required: true,
+    },
+    {
+      id: 'o-2',
+      label: 'สำรวจและประเมินอันตรายรอบพื้นที่ปฏิบัติงานก่อนเริ่มงาน',
+      labelEn: 'Assess on-site hazards and potential safety risks before starting work',
+      category: 'area',
+      checked: false,
+      required: true,
+    },
+    {
+      id: 'o-3',
+      label: 'เครื่องมือ อุปกรณ์ และระบบไฟฟ้าอยู่ในสภาพสมบูรณ์ พร้อมใช้งานอย่างปลอดภัย',
+      labelEn: 'Tools, equipment, and electrical systems in safe and operational condition',
+      category: 'tools',
+      checked: false,
+      required: true,
+    },
+    {
+      id: 'o-4',
+      label: 'สื่อสารขั้นตอนการทำงาน แผนป้องกันอันตราย และผู้รับผิดชอบกับทีมงานอย่างชัดเจน',
+      labelEn: 'Brief task steps, safety measures, and emergency contacts with team members',
+      category: 'area',
+      checked: false,
+      required: true,
+    },
+    {
+      id: 'o-5',
+      label: 'พื้นที่ปฏิบัติงานมีแสงสว่างและการระบายอากาศเพียงพอ ไม่มีสิ่งกีดขวางทางหนีไฟ',
+      labelEn: 'Adequate lighting and ventilation at worksite; clear emergency egress paths',
+      category: 'area',
+      checked: false,
+      required: true,
+    },
+  ],
 };
 
 export const ChecklistScreen: React.FC<ChecklistScreenProps> = ({
@@ -192,6 +234,7 @@ export const ChecklistScreen: React.FC<ChecklistScreenProps> = ({
   const isTh = lang === 'th';
 
   const [selectedTask, setSelectedTask] = useState<string>('general');
+  const [customTaskName, setCustomTaskName] = useState<string>('');
   const [area, setArea] = useState<string>(KKU_CAMPUS_LOCATIONS[3]);
   const [customArea, setCustomArea] = useState<string>('');
   const [items, setItems] = useState<ChecklistItem[]>(CHECKLIST_TEMPLATES.general);
@@ -201,7 +244,7 @@ export const ChecklistScreen: React.FC<ChecklistScreenProps> = ({
 
   const handleTaskChange = (taskKey: string) => {
     setSelectedTask(taskKey);
-    setItems(CHECKLIST_TEMPLATES[taskKey].map((i) => ({ ...i, checked: false })));
+    setItems((CHECKLIST_TEMPLATES[taskKey] || CHECKLIST_TEMPLATES.general).map((i) => ({ ...i, checked: false })));
   };
 
   const toggleItem = (id: string) => {
@@ -232,6 +275,9 @@ export const ChecklistScreen: React.FC<ChecklistScreenProps> = ({
       hot_work: isTh ? 'งานประกายไฟ/ตัดเชื่อม (Hot Work)' : 'Hot Work',
       lab_work: isTh ? 'งานห้องปฏิบัติการเคมี (Lab Work)' : 'Chemical Lab Work',
       height_work: isTh ? 'งานบนที่สูง (Work at Height)' : 'Working at Heights',
+      other: customTaskName.trim()
+        ? `${isTh ? 'งานอื่น ๆ' : 'Other Work'}: ${customTaskName.trim()}`
+        : (isTh ? 'งานอื่น ๆ (Other Work)' : 'Other Work'),
     };
 
     const finalArea = area === 'OTHER' ? (customArea.trim() || 'พื้นที่ระบุเอง (Custom Area)') : area;
@@ -303,7 +349,7 @@ export const ChecklistScreen: React.FC<ChecklistScreenProps> = ({
         <label className="block text-sm font-bold text-slate-800">
           1. {isTh ? 'เลือกประเภทงานที่กำลังจะปฏิบัติ' : 'Select Work Activity Type'}
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <button
             type="button"
             onClick={() => handleTaskChange('general')}
@@ -351,7 +397,32 @@ export const ChecklistScreen: React.FC<ChecklistScreenProps> = ({
           >
             🪜 {isTh ? 'งานบนที่สูง' : 'Work at Height'}
           </button>
+
+          <button
+            type="button"
+            onClick={() => handleTaskChange('other')}
+            className={`p-3 rounded-2xl text-xs font-bold border-2 transition-all text-left col-span-2 sm:col-span-1 ${
+              selectedTask === 'other'
+                ? 'bg-teal-50 border-teal-600 text-teal-900 shadow-sm'
+                : 'bg-white border-slate-200 text-slate-700'
+            }`}
+          >
+            ⚙️ {isTh ? 'งานอื่น ๆ' : 'Other Tasks'}
+          </button>
         </div>
+
+        {/* Optional Custom Task Name Input when 'other' is selected */}
+        {selectedTask === 'other' && (
+          <div className="pt-1">
+            <input
+              type="text"
+              placeholder={isTh ? '✍️ ระบุประเภทงานอื่น ๆ (เช่น งานไฟฟ้า, งานขุดเจาะ, งานขนย้าย...)' : '✍️ Specify other work type (e.g. Electrical, Excavation, Moving...)'}
+              value={customTaskName}
+              onChange={(e) => setCustomTaskName(e.target.value)}
+              className="w-full min-h-[46px] px-4 py-2.5 rounded-2xl border-2 border-teal-400 bg-white text-sm focus:outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            />
+          </div>
+        )}
       </div>
 
       {/* 3. Select Work Area */}
