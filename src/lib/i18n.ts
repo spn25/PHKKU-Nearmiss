@@ -5,7 +5,7 @@
 
 export const translations = {
   th: {
-    appName: 'KKU Nearmiss Safety',
+    appName: 'KKU Safe',
     tagline: 'Safe • Simple • Fast',
     greeting: 'วันนี้ปลอดภัยไหม?',
     welcomeBack: 'ยินดีต้อนรับ',
@@ -153,7 +153,7 @@ export const translations = {
     kkuLocation: 'มหาวิทยาลัยขอนแก่น (KKU)',
   },
   en: {
-    appName: 'KKU Nearmiss Safety',
+    appName: 'KKU Safe',
     tagline: 'Safe • Simple • Fast',
     greeting: 'Are you safe today?',
     welcomeBack: 'Welcome',
