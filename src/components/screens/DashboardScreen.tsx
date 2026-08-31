@@ -19,6 +19,9 @@ import {
   FileEdit,
   KeyRound,
   LogOut,
+  Camera,
+  Image as ImageIcon,
+  Sparkles,
 } from 'lucide-react';
 import {
   CurrentUser,
@@ -38,6 +41,7 @@ import {
   setAdminAuthenticated,
 } from '../../lib/storage';
 import { AdminPasscodeModal } from '../AdminPasscodeModal';
+import { AdminResolutionModal } from '../AdminResolutionModal';
 
 interface DashboardScreenProps {
   currentUser: CurrentUser;
@@ -72,6 +76,18 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     newStatus: ReportStatus;
   } | null>(null);
 
+  // Admin Resolution Modal state (for status update + photo after resolution)
+  const [resolutionModalItem, setResolutionModalItem] = useState<{
+    id: string;
+    kind: 'hazard' | 'env';
+    title: string;
+    location: string;
+    status: ReportStatus;
+    photoDataUrl?: string;
+    resolvedPhotoDataUrl?: string;
+    adminNote?: string;
+  } | null>(null);
+
   // Note editing state for Admin
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
@@ -93,6 +109,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       createdAt: r.createdAt,
       aiTag: r.aiAnalysisTag,
       photoDataUrl: r.photoDataUrl,
+      resolvedPhotoDataUrl: r.resolvedPhotoDataUrl,
       adminNote: r.adminNote,
       resolvedAt: r.resolvedAt,
     })),
@@ -108,6 +125,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       createdAt: e.createdAt,
       aiTag: undefined,
       photoDataUrl: e.photoDataUrl,
+      resolvedPhotoDataUrl: e.resolvedPhotoDataUrl,
       adminNote: e.adminNote,
       resolvedAt: e.resolvedAt,
     })),
@@ -120,6 +138,35 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     return true;
   });
 
+  const handleOpenResolutionModal = (item: typeof allReportItems[0]) => {
+    if (!isAdmin) {
+      setIsPasscodeModalOpen(true);
+      return;
+    }
+    setResolutionModalItem(item);
+  };
+
+  const handleSaveResolution = (
+    id: string,
+    kind: 'hazard' | 'env',
+    status: ReportStatus,
+    note: string,
+    resolvedPhotoUrl?: string
+  ) => {
+    if (kind === 'hazard') {
+      updateNearMissStatus(id, status, note, resolvedPhotoUrl);
+    } else {
+      updateEnvReportStatus(id, status, note, resolvedPhotoUrl);
+    }
+    onRefreshData();
+    onShowToast(
+      isTh
+        ? `✓ [แอดมิน] บันทึกการแก้ไขและอัปเดตรูปภาพเรียบร้อยแล้ว`
+        : `✓ [Admin] Resolution details & photo updated`,
+      'success'
+    );
+  };
+
   const handleRequestStatusChange = (id: string, kind: 'hazard' | 'env', newStatus: ReportStatus) => {
     if (!isAdmin) {
       setPendingStatusUpdate({ id, kind, newStatus });
@@ -129,11 +176,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     executeStatusUpdate(id, kind, newStatus);
   };
 
-  const executeStatusUpdate = (id: string, kind: 'hazard' | 'env', newStatus: ReportStatus, note?: string) => {
+  const executeStatusUpdate = (
+    id: string,
+    kind: 'hazard' | 'env',
+    newStatus: ReportStatus,
+    note?: string,
+    resolvedPhotoUrl?: string
+  ) => {
     if (kind === 'hazard') {
-      updateNearMissStatus(id, newStatus, note);
+      updateNearMissStatus(id, newStatus, note, resolvedPhotoUrl);
     } else {
-      updateEnvReportStatus(id, newStatus, note);
+      updateEnvReportStatus(id, newStatus, note, resolvedPhotoUrl);
     }
     onRefreshData();
     onShowToast(
@@ -149,8 +202,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     setAdminAuthenticated(true);
     onShowToast(
       isTh
-        ? '✓ เข้าสู่ระบบแอดมินสำเร็จ! ท่านสามารถจัดการสถานะได้แล้ว'
-        : '✓ Admin unlocked! You can now manage report statuses.',
+        ? '✓ เข้าสู่ระบบแอดมินสำเร็จ! ท่านสามารถจัดการสถานะและแนบรูปภาพหลังแก้ไขได้แล้ว'
+        : '✓ Admin unlocked! You can now manage statuses and after-photos.',
       'success'
     );
 
@@ -199,13 +252,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       updateEnvReportStatus(id, currentStatus, noteText);
     }
     setEditingNoteId(null);
-    setNoteText('');
     onRefreshData();
-    onShowToast(isTh ? '✓ บันทึกหมายเหตุการแก้ไขแล้ว' : '✓ Admin note saved', 'success');
+    onShowToast(isTh ? '✓ บันทึกหมายเหตุเรียบร้อย' : '✓ Note saved', 'success');
   };
 
   return (
-    <div className="space-y-5 pb-24 max-w-xl mx-auto">
+    <div className="space-y-4 pb-24 max-w-xl mx-auto">
       {/* Admin Passcode Modal */}
       <AdminPasscodeModal
         isOpen={isPasscodeModalOpen}
@@ -217,136 +269,123 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         isTh={isTh}
       />
 
-      {/* 1. Header */}
-      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-3xl p-5 shadow-lg border border-slate-800">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
-            <BarChart3 className="w-4 h-4" />
-            <span>Safety Officer & Executive Management</span>
+      {/* Admin Resolution & Photo Modal */}
+      {resolutionModalItem && (
+        <AdminResolutionModal
+          isOpen={Boolean(resolutionModalItem)}
+          onClose={() => setResolutionModalItem(null)}
+          reportItem={resolutionModalItem}
+          onSave={handleSaveResolution}
+          isTh={isTh}
+        />
+      )}
+
+      {/* 1. Header Banner & Mode Indicator */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-5 shadow-lg border border-slate-800">
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-2 text-indigo-300 text-xs font-bold uppercase tracking-wider">
+            <BarChart3 className="w-4 h-4 text-indigo-400" />
+            <span>{isTh ? 'ระบบสถิติและความปลอดภัย มข.' : 'KKU Safety Statistics'}</span>
           </div>
 
-          {/* Admin badge */}
+          {/* Admin Mode Badge & Toggle */}
           {isAdmin ? (
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin Active</span>
-            </span>
-          ) : (
-            <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[11px] font-semibold flex items-center gap-1">
-              <Lock className="w-3 h-3" />
-              <span>User Mode</span>
-            </span>
-          )}
-        </div>
-
-        <h2 className="text-xl font-black text-white">{t.dashboardTitle}</h2>
-        <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-          {t.dashboardDesc}
-        </p>
-      </div>
-
-      {/* 2. Access Level & Role Banner */}
-      <div
-        className={`p-4 rounded-3xl border transition-all ${
-          isAdmin
-            ? 'bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border-emerald-500/40 text-emerald-100 shadow-sm'
-            : 'bg-white border-amber-200 shadow-sm text-slate-800'
-        }`}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div
-              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                isAdmin
-                  ? 'bg-emerald-600 text-white shadow-md'
-                  : 'bg-amber-100 text-amber-700'
-              }`}
-            >
-              {isAdmin ? (
-                <Unlock className="w-5 h-5" />
-              ) : (
-                <Lock className="w-5 h-5" />
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-xs font-black uppercase tracking-wider">
-                  {isAdmin
-                    ? (isTh ? '🛡️ โหมดผู้ดูแลระบบ (Admin Mode)' : '🛡️ Admin Authorized')
-                    : (isTh ? '👤 โหมดผู้ใช้ทั่วไป (General User Mode)' : '👤 General User Mode')}
-                </h4>
-              </div>
-              <p className="text-xs mt-1 leading-relaxed opacity-90">
-                {isAdmin
-                  ? (isTh
-                      ? 'ท่านมีสิทธิ์จัดการและอัปเดตสถานะการดำเนินงานแก้ไขปัญหา รวมถึงบันทึกหมายเหตุการซ่อมบำรุง'
-                      : 'You have full permission to update task statuses and manage maintenance records.')
-                  : (isTh
-                      ? 'ผู้ใช้ทั่วไปสามารถแจ้งปัญหาและดูความคืบหน้าได้เท่านั้น การแก้ไขสถานะต้องใช้รหัสผ่านแอดมิน'
-                      : 'General users can only report and view incidents. Enter admin passcode to edit status.')}
-              </p>
-            </div>
-          </div>
-
-          {/* Action button to unlock or logout admin */}
-          <div className="shrink-0">
-            {isAdmin ? (
+            <div className="flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+              <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{isTh ? 'โหมดแอดมิน (Admin)' : 'Admin Mode'}</span>
               <button
                 type="button"
                 onClick={handleLogoutAdmin}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 border border-slate-600 transition-all flex items-center gap-1.5 shadow-sm"
+                className="ml-1 text-slate-300 hover:text-white p-0.5"
+                title="Log out Admin"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>{isTh ? 'ออกจากแอดมิน' : 'Lock Admin'}</span>
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsPasscodeModalOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-md"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>{isTh ? 'เข้าสู่ระบบแอดมิน' : 'Admin Login'}</span>
-              </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsPasscodeModalOpen(true)}
+              className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm"
+              title="Enter Admin Passcode"
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>{isTh ? 'เข้าสู่ระบบแอดมิน' : 'Admin Login'}</span>
+            </button>
+          )}
+        </div>
+
+        <h2 className="text-xl font-black text-white">{t.dashTitle}</h2>
+        <p className="text-xs text-indigo-200 mt-1 leading-relaxed">
+          {isTh
+            ? 'ผู้ใช้ทั่วไปดูสถิติและสถานะได้ ส่วนแอดมินสามารถจัดการสถานะและแนบรูปภาพหลังแก้ไขได้'
+            : 'General users can view progress. Admins can manage statuses and post-resolution photos.'}
+        </p>
+      </div>
+
+      {/* 2. Top Summary KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm text-center">
+          <span className="text-xs font-bold text-slate-500 block mb-1">
+            {t.totalNearMiss}
+          </span>
+          <p className="text-2xl font-black text-slate-900">{stats.totalNearMiss}</p>
+          <span className="text-[10px] text-slate-400">{isTh ? 'เรื่องทั้งหมด' : 'Reports'}</span>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm text-center">
+          <span className="text-xs font-bold text-red-600 block mb-1">
+            {t.highSeverity}
+          </span>
+          <p className="text-2xl font-black text-red-700">{stats.highSeverityCount}</p>
+          <span className="text-[10px] text-red-400">{isTh ? 'ความเสี่ยงสูง' : 'Critical'}</span>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm text-center">
+          <span className="text-xs font-bold text-emerald-600 block mb-1">
+            {t.resolvedCount}
+          </span>
+          <p className="text-2xl font-black text-emerald-700">{stats.statusResolvedCount}</p>
+          <span className="text-[10px] text-emerald-500">
+            {stats.resolutionRate}% {isTh ? 'สำเร็จ' : 'Rate'}
+          </span>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm text-center">
+          <span className="text-xs font-bold text-indigo-600 block mb-1">
+            {isTh ? 'เฉลี่ยแก้ไข' : 'Avg Resolve'}
+          </span>
+          <p className="text-2xl font-black text-indigo-900">{stats.avgResolutionHours}h</p>
+          <span className="text-[10px] text-indigo-400">{isTh ? 'ชั่วโมง' : 'Hours'}</span>
         </div>
       </div>
 
-      {/* 3. Key Metrics Grid (4 Blocks) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        {/* Total Near Miss */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm text-center">
-          <div className="flex items-center justify-center gap-1 text-amber-500 mb-1">
+      {/* 3. Safety vs Environment Breakdown */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <div
+          onClick={() => setSelectedTypeFilter(selectedTypeFilter === 'hazard' ? 'all' : 'hazard')}
+          className={`p-4 rounded-3xl border-2 transition-all cursor-pointer text-center ${
+            selectedTypeFilter === 'hazard'
+              ? 'bg-rose-50 border-rose-500 ring-2 ring-rose-200'
+              : 'bg-white border-slate-200'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-1 text-rose-600 mb-1">
             <AlertTriangle className="w-4 h-4" />
-            <span className="text-[11px] font-bold text-slate-600">Near Miss</span>
+            <span className="text-[11px] font-bold text-slate-600">Near Miss & Hazard</span>
           </div>
-          <p className="text-2xl font-black text-slate-900">{stats.nearMissCount}</p>
-          <span className="text-[10px] text-slate-400">{isTh ? 'เกือบเกิดเหตุ' : 'Incidents'}</span>
+          <p className="text-2xl font-black text-slate-900">{stats.totalNearMiss}</p>
+          <span className="text-[10px] text-slate-400">{isTh ? 'รายงานความเสี่ยง' : 'Safety Reports'}</span>
         </div>
 
-        {/* Unsafe Acts */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm text-center">
-          <div className="flex items-center justify-center gap-1 text-rose-500 mb-1">
-            <ShieldAlert className="w-4 h-4" />
-            <span className="text-[11px] font-bold text-slate-600">Unsafe Acts</span>
-          </div>
-          <p className="text-2xl font-black text-slate-900">{stats.unsafeActCount}</p>
-          <span className="text-[10px] text-slate-400">{isTh ? 'พฤติกรรมเสี่ยง' : 'Behaviors'}</span>
-        </div>
-
-        {/* Unsafe Conditions */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm text-center">
-          <div className="flex items-center justify-center gap-1 text-orange-500 mb-1">
-            <AlertCircle className="w-4 h-4" />
-            <span className="text-[11px] font-bold text-slate-600">Unsafe Cond.</span>
-          </div>
-          <p className="text-2xl font-black text-slate-900">{stats.unsafeConditionCount}</p>
-          <span className="text-[10px] text-slate-400">{isTh ? 'สภาพแวดล้อม' : 'Hazards'}</span>
-        </div>
-
-        {/* Environment Reports */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm text-center">
+        <div
+          onClick={() => setSelectedTypeFilter(selectedTypeFilter === 'env' ? 'all' : 'env')}
+          className={`p-4 rounded-3xl border-2 transition-all cursor-pointer text-center ${
+            selectedTypeFilter === 'env'
+              ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-200'
+              : 'bg-white border-slate-200'
+          }`}
+        >
           <div className="flex items-center justify-center gap-1 text-emerald-600 mb-1">
             <Leaf className="w-4 h-4" />
             <span className="text-[11px] font-bold text-slate-600">Environment</span>
@@ -444,59 +483,104 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </div>
       </div>
 
-      {/* 6. Reports Table & Status Updater */}
+      {/* 6. Reports Table & Status / Photo Updater */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-            {t.recentActivity} ({filteredItems.length})
+            {isTh ? 'รายการแจ้งเหตุทั้งหมด' : 'All Incident Logs'} ({filteredItems.length})
           </h3>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setActiveTab('all')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-colors ${
+                activeTab === 'all'
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {isTh ? 'ทั้งหมด' : 'All'}
+            </button>
+          </div>
+        </div>
 
+        {/* Filter Badges */}
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           <button
+            type="button"
             onClick={() => setActiveTab('all')}
-            className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+            className={`px-3 py-1.5 rounded-2xl text-xs font-bold shrink-0 transition-all ${
+              activeTab === 'all'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 border border-slate-200'
+            }`}
           >
-            {isTh ? 'ล้างตัวกรอง' : 'Clear Filters'}
+            {isTh ? 'ทุกสถานะ' : 'All'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('new')}
+            className={`px-3 py-1.5 rounded-2xl text-xs font-bold shrink-0 transition-all ${
+              activeTab === 'new'
+                ? 'bg-red-600 text-white shadow-sm'
+                : 'bg-white text-red-700 border border-red-200'
+            }`}
+          >
+            🔴 {t.statusNew} ({stats.statusNewCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('in_progress')}
+            className={`px-3 py-1.5 rounded-2xl text-xs font-bold shrink-0 transition-all ${
+              activeTab === 'in_progress'
+                ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                : 'bg-white text-amber-700 border border-amber-200'
+            }`}
+          >
+            🟡 {t.statusInProgress} ({stats.statusInProgressCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('resolved')}
+            className={`px-3 py-1.5 rounded-2xl text-xs font-bold shrink-0 transition-all ${
+              activeTab === 'resolved'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-white text-emerald-700 border border-emerald-200'
+            }`}
+          >
+            🟢 {t.statusResolved} ({stats.statusResolvedCount})
           </button>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-          {[
-            { id: 'all', label: isTh ? 'ทั้งหมด' : 'All' },
-            { id: 'new', label: `🔴 ${t.statusNew}` },
-            { id: 'in_progress', label: `🟡 ${t.statusInProgress}` },
-            { id: 'resolved', label: `🟢 ${t.statusResolved}` },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                activeTab === tab.id
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* List of Report Cards with In-line Status Modifier */}
+        {/* Report List Cards */}
         <div className="space-y-3">
           {filteredItems.length === 0 ? (
-            <div className="p-8 bg-white rounded-3xl text-center border border-slate-200 text-slate-400 text-sm">
-              {isTh ? 'ไม่มีรายการในหมวดหมู่นี้' : 'No reports found for this filter.'}
+            <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 space-y-2">
+              <CheckCircle2 className="w-10 h-10 text-slate-300 mx-auto" />
+              <p className="text-sm font-bold text-slate-700">
+                {isTh ? 'ไม่มีรายการแจ้งเหตุในหมวดนี้' : 'No reports found'}
+              </p>
+              <p className="text-xs text-slate-400">
+                {isTh ? 'สามารถสลับแท็บเพื่อดูสถานะอื่นๆ ได้' : 'Switch tabs to see other statuses'}
+              </p>
             </div>
           ) : (
             filteredItems.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-3xl p-4 shadow-sm border border-slate-200 space-y-3 transition-all"
+                className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3"
               >
+                {/* Card Header: Kind badge & Status badge */}
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono">
-                      {item.id} • {item.kind === 'hazard' ? 'SAFETY' : 'ENV'}
+                  <div className="flex-1">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                        item.kind === 'hazard'
+                          ? 'bg-rose-100 text-rose-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {item.kind === 'hazard' ? '⚠️ Near Miss / Safety' : '🌿 Environment'}
                     </span>
                     <h4 className="text-sm font-bold text-slate-900 mt-1 leading-snug">
                       {item.title}
@@ -533,6 +617,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </p>
                 </div>
 
+                {/* Admin Note Record */}
                 {item.adminNote && (
                   <div className="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 space-y-0.5">
                     <span className="font-bold flex items-center gap-1 text-[11px] text-indigo-700">
@@ -543,14 +628,46 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </div>
                 )}
 
-                {item.photoDataUrl && (
-                  <div className="rounded-xl overflow-hidden max-h-36 bg-slate-900 flex items-center justify-center">
-                    <img
-                      src={item.photoDataUrl}
-                      alt="Report Attachment"
-                      className="max-h-36 object-contain"
-                      referrerPolicy="no-referrer"
-                    />
+                {/* Photos Section: Before and After Images */}
+                {(item.photoDataUrl || item.resolvedPhotoDataUrl) && (
+                  <div className="space-y-1.5 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {/* Before Photo */}
+                      {item.photoDataUrl && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                            <span>📸</span>
+                            <span>{isTh ? 'รูปภาพแจ้งเหตุ (Before)' : 'Initial Photo'}</span>
+                          </span>
+                          <div className="rounded-xl overflow-hidden max-h-36 bg-slate-900 flex items-center justify-center border border-slate-200">
+                            <img
+                              src={item.photoDataUrl}
+                              alt="Report Attachment"
+                              className="max-h-36 object-contain"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* After / Resolved Photo */}
+                      {item.resolvedPhotoDataUrl && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>{isTh ? 'รูปภาพหลังการแก้ไข (After)' : 'After Resolution'}</span>
+                          </span>
+                          <div className="rounded-xl overflow-hidden max-h-36 bg-slate-900 flex items-center justify-center border border-emerald-300">
+                            <img
+                              src={item.resolvedPhotoDataUrl}
+                              alt="Resolved Photo Proof"
+                              className="max-h-36 object-contain"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -618,48 +735,30 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                     </div>
                   </div>
 
-                  {/* Extra Admin Actions: Note & Delete */}
-                  {isAdmin && (
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        {editingNoteId === item.id ? (
-                          <div className="flex items-center gap-1.5 w-full">
-                            <input
-                              type="text"
-                              value={noteText}
-                              onChange={(e) => setNoteText(e.target.value)}
-                              placeholder={isTh ? 'ใส่หมายเหตุการแก้ไข...' : 'Action notes...'}
-                              className="px-2 py-1 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white"
-                              autoFocus
-                            />
-                            <button
-                              onClick={() => handleSaveNote(item.id, item.kind, item.status)}
-                              className="px-2 py-1 bg-emerald-600 text-white rounded-lg font-bold text-xs"
-                            >
-                              {isTh ? 'บันทึก' : 'Save'}
-                            </button>
-                            <button
-                              onClick={() => setEditingNoteId(null)}
-                              className="px-2 py-1 text-slate-500 text-xs"
-                            >
-                              {isTh ? 'ยกเลิก' : 'Cancel'}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingNoteId(item.id);
-                              setNoteText(item.adminNote || '');
-                            }}
-                            className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 text-[11px]"
-                          >
-                            <FileEdit className="w-3 h-3" />
-                            <span>{item.adminNote ? (isTh ? 'แก้ไขหมายเหตุ' : 'Edit Note') : (isTh ? '+ บันทึกหมายเหตุ' : '+ Add Note')}</span>
-                          </button>
-                        )}
-                      </div>
+                  {/* Comprehensive Admin Action Bar (Photo After Resolution + Note + Delete) */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenResolutionModal(item)}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 ${
+                        isAdmin
+                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>
+                        {item.resolvedPhotoDataUrl
+                          ? isTh
+                            ? 'ดู/เปลี่ยนรูปหลังแก้ไข'
+                            : 'Edit After Photo'
+                          : isTh
+                          ? '+ เพิ่มรูปภาพหลังการแก้ไข'
+                          : '+ Add After Photo'}
+                      </span>
+                    </button>
 
+                    {isAdmin && (
                       <button
                         type="button"
                         onClick={() => handleDeleteReport(item.id, item.kind)}
@@ -669,8 +768,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>{isTh ? 'ลบรายการ' : 'Delete'}</span>
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             ))

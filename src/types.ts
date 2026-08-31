@@ -41,6 +41,7 @@ export type ScreenName =
   | 'checklist'
   | 'ppe_scan'
   | 'ai_hazard'
+  | 'ai_chat'
   | 'health'
   | 'environment'
   | 'env_report'
@@ -59,6 +60,7 @@ export interface NearMissReport {
   type: NearMissType;
   description: string;
   photoDataUrl?: string;
+  resolvedPhotoDataUrl?: string; // ภาพถ่ายหลังการแก้ไขโดยแอดมิน
   location: string;
   severity: Severity;
   reportedBy: string;
@@ -118,6 +120,7 @@ export interface EnvReport {
   category: EnvCategory;
   description: string;
   photoDataUrl?: string;
+  resolvedPhotoDataUrl?: string; // ภาพถ่ายหลังการแก้ไขโดยแอดมิน
   location: string;
   reportedBy: string;
   reporterName?: string;
@@ -127,6 +130,18 @@ export interface EnvReport {
   updatedAt?: string; // ISO string
   adminNote?: string;
   resolvedAt?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: string;
+  suggestedAction?: {
+    label: string;
+    screen: ScreenName;
+    prefillData?: any;
+  };
 }
 
 export interface HealthRemindersSettings {

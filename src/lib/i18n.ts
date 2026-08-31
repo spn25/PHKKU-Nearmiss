@@ -36,7 +36,7 @@ export const translations = {
 
     // Near Miss
     nearMissTitle: 'แจ้งอันตราย / รายงาน Near Miss',
-    nearMissDesc: 'รายงานเหตุการณ์เกือบเกิดอุบัติเหตุ หรือสภาพการณ์ที่ไม่ปลอดภัยใน 30 วินาที',
+    nearMissDesc: 'รายงานเหตุการณ์เกือบเกิดอุบัติเหตุ หรือสภาพการณ์ที่ไม่ปลอดภัยได้อย่างสะดวกรวดเร็ว',
     hazardType: 'ประเภทเหตุการณ์',
     typeNearMiss: 'Near Miss (เกือบเกิดเหตุ)',
     typeUnsafeAct: 'พฤติกรรมไม่ปลอดภัย',

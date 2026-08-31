@@ -10,6 +10,7 @@ import {
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { Toast } from './components/Toast';
+import { Bot, Sparkles } from 'lucide-react';
 
 // Screens
 import { HomeScreen } from './components/screens/HomeScreen';
@@ -23,6 +24,7 @@ import { EmergencyScreen } from './components/screens/EmergencyScreen';
 import { SafetyManualScreen } from './components/screens/SafetyManualScreen';
 import { DashboardScreen } from './components/screens/DashboardScreen';
 import { ProfileSettingsScreen } from './components/screens/ProfileSettingsScreen';
+import { AIChatConsultScreen } from './components/screens/AIChatConsultScreen';
 
 export function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('home');
@@ -191,6 +193,13 @@ export function App() {
           />
         )}
 
+        {currentScreen === 'ai_chat' && (
+          <AIChatConsultScreen
+            currentUser={currentUser}
+            onNavigate={handleNavigate}
+          />
+        )}
+
         {(currentScreen === 'profile' || currentScreen === 'settings') && (
           <ProfileSettingsScreen
             currentUser={currentUser}
@@ -202,6 +211,31 @@ export function App() {
           />
         )}
       </main>
+
+      {/* Floating Circular AI Safety Advisor Button (Bottom Right) */}
+      {currentScreen !== 'ai_chat' && (
+        <button
+          id="btn-floating-ai-advisor"
+          onClick={() => handleNavigate('ai_chat')}
+          aria-label="พูดคุยกับ AI ความปลอดภัย"
+          className="fixed bottom-20 right-4 sm:right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-900 via-purple-800 to-indigo-600 hover:from-indigo-800 hover:to-purple-700 active:scale-90 text-white shadow-xl shadow-purple-900/30 flex items-center justify-center border-2 border-white/60 transition-all group focus:outline-none focus:ring-4 focus:ring-purple-300"
+          title={currentUser.language === 'en' ? 'Safety AI Advisor' : 'ผู้ช่วย AI ความปลอดภัย'}
+        >
+          <div className="relative flex items-center justify-center">
+            <Bot className="w-7 h-7 text-white stroke-[2.2] group-hover:scale-110 transition-transform" />
+            <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-400 border border-white"></span>
+            </span>
+          </div>
+          
+          {/* Subtle hover/tooltip badge */}
+          <span className="hidden sm:group-hover:flex absolute right-full mr-2.5 px-2.5 py-1 bg-slate-900/90 backdrop-blur-md text-white text-xs font-semibold rounded-xl whitespace-nowrap shadow-md pointer-events-none items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+            <span>{currentUser.language === 'en' ? 'Ask Safety AI' : 'พูดคุยกับ AI'}</span>
+          </span>
+        </button>
+      )}
 
       {/* Bottom Floating Navigation Bar */}
       <BottomNav

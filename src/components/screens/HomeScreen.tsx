@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Plus,
+  Bot,
+  MessageSquare,
 } from 'lucide-react';
 import {
   ScreenName,
@@ -74,6 +76,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       time: r.createdAt,
       type: 'hazard' as const,
       severity: r.severity,
+      hasResolvedPhoto: Boolean(r.resolvedPhotoDataUrl),
     })),
     ...safeEnv.map((e) => ({
       id: e.id,
@@ -83,6 +86,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       time: e.createdAt,
       type: 'env' as const,
       severity: e.severity || 'medium',
+      hasResolvedPhoto: Boolean(e.resolvedPhotoDataUrl),
     })),
   ]
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
@@ -157,9 +161,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </p>
           </div>
 
-          {/* Quick Target Indicator */}
+          {/* Quick Target Indicator (Removed 30s text) */}
           <div className="mt-4 pt-3 border-t border-slate-700/80 flex items-center justify-between text-xs text-slate-300">
-            <span>{isTh ? '⚡ แจ้งอันตรายได้ใน 30 วินาที' : '⚡ 30-second hazard report'}</span>
+            <span>{isTh ? '⚡ แจ้งอันตรายสะดวกรวดเร็ว' : '⚡ Fast hazard report'}</span>
             <span className="text-emerald-400 font-semibold">
               {isTh ? 'ปลอดภัย • ง่าย • รวดเร็ว' : 'Safe • Simple • Fast'}
             </span>
@@ -167,19 +171,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </section>
 
-      {/* 2. Primary 5 Big Action Buttons (Major Functional Scope) */}
+      {/* 2. Primary Action Buttons */}
       <section className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
             {isTh ? 'เมนูหลักความปลอดภัย / Action Tools' : 'Primary Safety Tools'}
           </h3>
-          <span className="text-xs text-slate-700 font-medium">
-            {isTh ? 'กดง่าย มือเดียว/ใส่ถุงมือ' : 'One-handed touch'}
-          </span>
         </div>
 
         <div className="grid grid-cols-1 gap-3">
-          {/* Action 1: Report Near Miss / Hazard (RED / DANGER & URGENT) */}
+          {/* Action 1: Report Near Miss / Hazard (Removed 'ด่วน 30s' badge) */}
           <button
             id="btn-home-report-hazard"
             onClick={() => onNavigate('near_miss')}
@@ -194,9 +195,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <h4 className="text-base sm:text-lg font-black tracking-tight leading-tight">
                     {t.actionReportHazard}
                   </h4>
-                  <span className="text-[10px] uppercase font-bold bg-white text-red-700 px-2 py-0.5 rounded-full shadow-sm">
-                    {isTh ? 'ด่วน 30s' : 'Fast'}
-                  </span>
                 </div>
                 <p className="text-xs text-red-100 mt-0.5 line-clamp-1 font-normal">
                   {t.actionReportHazardSub}
@@ -240,13 +238,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           >
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-                <Leaf className="w-6 h-6 text-white stroke-[2.5]" />
+                <Leaf className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h4 className="text-base font-black tracking-tight leading-tight">
+                <h4 className="text-base font-bold tracking-tight leading-tight">
                   {t.actionEnvReport}
                 </h4>
-                <p className="text-xs text-emerald-100 mt-0.5 line-clamp-1 font-medium">
+                <p className="text-xs text-emerald-100 mt-0.5 line-clamp-1 font-normal">
                   {t.actionEnvReportSub}
                 </p>
               </div>
@@ -256,47 +254,42 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </div>
           </button>
 
-          {/* Action 4: Emergency SOS (RED / DANGER) */}
+          {/* Action 4: Emergency SOS */}
           <button
             id="btn-home-emergency"
             onClick={() => onNavigate('emergency')}
-            className="w-full min-h-[64px] p-4 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:scale-[0.99] text-white rounded-2xl shadow-md flex items-center justify-between transition-all group border border-red-400/40 text-left animate-[pulse_3s_infinite]"
+            className="w-full p-3.5 bg-rose-50 hover:bg-rose-100 active:scale-[0.99] rounded-2xl border border-rose-200 flex items-center justify-between transition-all group text-left"
           >
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-                <PhoneCall className="w-6 h-6 text-white stroke-[2.5]" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <PhoneCall className="w-5 h-5" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-base font-black tracking-tight leading-tight">
-                    {t.actionEmergency}
-                  </h4>
-                  <span className="text-[10px] font-bold bg-white text-red-700 px-2 py-0.5 rounded-full">
-                    24/7 KKU
-                  </span>
-                </div>
-                <p className="text-xs text-red-100 mt-0.5 line-clamp-1 font-normal">
+                <h4 className="text-sm font-bold text-rose-900 leading-tight">
+                  {t.actionEmergency}
+                </h4>
+                <p className="text-xs text-rose-700 mt-0.5 line-clamp-1">
                   {t.actionEmergencySub}
                 </p>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 group-hover:translate-x-1 transition-transform">
-              <ChevronRight className="w-5 h-5 text-white" />
+            <div className="w-7 h-7 rounded-full bg-rose-200/60 flex items-center justify-center shrink-0 group-hover:translate-x-1 transition-transform text-rose-700">
+              <ChevronRight className="w-4 h-4" />
             </div>
           </button>
 
-          {/* Action 5: Safety Manual (GREEN) */}
+          {/* Action 5: Safety Manual */}
           <button
             id="btn-home-manual"
             onClick={() => onNavigate('manual')}
-            className="w-full min-h-[60px] p-4 bg-white hover:bg-slate-50 active:scale-[0.99] text-slate-800 rounded-2xl shadow-sm flex items-center justify-between transition-all group border border-slate-200 text-left"
+            className="w-full p-3.5 bg-white hover:bg-slate-50 active:scale-[0.99] rounded-2xl border border-slate-200 flex items-center justify-between transition-all group text-left"
           >
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                <BookOpen className="w-5 h-5 stroke-[2.5]" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                <BookOpen className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900 tracking-tight leading-tight">
+                <h4 className="text-sm font-bold text-slate-800 leading-tight">
                   {t.actionSafetyManual}
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
@@ -311,26 +304,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </section>
 
-      {/* 3. Secondary Smart Tools (AI Hazard, PPE Scan, Dashboard) */}
+      {/* 3. Secondary Smart Tools (AI Hazard, PPE Scan, Dashboard, AI Chat) */}
       <section className="space-y-2.5">
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider px-1">
           {isTh ? 'เครื่องมือเสริม / Smart Assistants' : 'Smart Assistants'}
         </h3>
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-4 gap-2">
+          {/* AI Chat Advisor */}
+          <button
+            id="btn-home-ai-chat"
+            onClick={() => onNavigate('ai_chat')}
+            className="p-2.5 bg-white rounded-2xl border border-purple-100 shadow-sm hover:border-purple-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
+          >
+            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <Bot className="w-4 h-4" />
+            </div>
+            <span className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight">
+              {isTh ? 'ปรึกษา AI' : 'AI Advisor'}
+            </span>
+            <span className="text-[9px] text-purple-600 font-medium mt-0.5">
+              {isTh ? 'ถามตอบ' : 'Chat'}
+            </span>
+          </button>
+
           {/* AI Hazard Detection */}
           <button
             id="btn-home-ai-hazard"
             onClick={() => onNavigate('ai_hazard')}
-            className="p-3 bg-white rounded-2xl border border-indigo-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[100px] justify-center"
+            className="p-2.5 bg-white rounded-2xl border border-indigo-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
           >
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-              <Sparkles className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <Sparkles className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">
-              {isTh ? 'AI สแกนเสี่ยง' : 'AI Hazard'}
+            <span className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight">
+              {isTh ? 'AI สแกนภาพ' : 'AI Vision'}
             </span>
-            <span className="text-[10px] text-indigo-600 font-medium mt-0.5">
-              {isTh ? 'วิเคราะห์ภาพ' : 'Vision Scan'}
+            <span className="text-[9px] text-indigo-600 font-medium mt-0.5">
+              {isTh ? 'วิเคราะห์' : 'Scan'}
             </span>
           </button>
 
@@ -338,16 +348,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             id="btn-home-ppe-scan"
             onClick={() => onNavigate('ppe_scan')}
-            className="p-3 bg-white rounded-2xl border border-teal-100 shadow-sm hover:border-teal-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[100px] justify-center"
+            className="p-2.5 bg-white rounded-2xl border border-teal-100 shadow-sm hover:border-teal-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
           >
-            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-              <QrCode className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <QrCode className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">
-              {isTh ? 'สแกน QR PPE' : 'PPE QR Site'}
+            <span className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight">
+              {isTh ? 'สแกน PPE' : 'PPE QR'}
             </span>
-            <span className="text-[10px] text-teal-600 font-medium mt-0.5">
-              {isTh ? 'เช็กอุปกรณ์' : 'Site Check'}
+            <span className="text-[9px] text-teal-600 font-medium mt-0.5">
+              {isTh ? 'เช็กจุด' : 'Site'}
             </span>
           </button>
 
@@ -355,22 +365,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             id="btn-home-dashboard"
             onClick={() => onNavigate('dashboard')}
-            className="p-3 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[100px] justify-center"
+            className="p-2.5 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col items-center text-center group active:scale-95 min-h-[96px] justify-center"
           >
-            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-              <BarChart3 className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <BarChart3 className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold text-slate-800 line-clamp-1 leading-tight">
-              {isTh ? 'แดชบอร์ด จป.' : 'Dashboard'}
+            <span className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight">
+              {isTh ? 'แดชบอร์ด' : 'Dashboard'}
             </span>
-            <span className="text-[10px] text-slate-700 font-medium mt-0.5">
-              {isTh ? 'สถิติ OSHE' : 'Live Stats'}
+            <span className="text-[9px] text-slate-700 font-medium mt-0.5">
+              {isTh ? 'สถิติ' : 'Live Stats'}
             </span>
           </button>
         </div>
       </section>
 
-      {/* 4. Health & Environmental Widget (Hydration, Heat Stress, AQI) */}
+      {/* 4. Health & Environmental Widget (Hydration, Heat Stress, AQI, 20-20-20) */}
       <section
         onClick={() => onNavigate('health')}
         className="bg-gradient-to-r from-blue-50 to-indigo-50/60 rounded-2xl p-4 border border-blue-200/80 shadow-sm cursor-pointer hover:border-blue-300 transition-all"
@@ -388,7 +398,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </div>
           </div>
           <span className="text-xs font-semibold text-blue-700 flex items-center gap-1">
-            {isTh ? 'จัดการ' : 'Details'} <ChevronRight className="w-3.5 h-3.5" />
+            {isTh ? 'จับเวลาพักสายตา / ดื่มน้ำ' : 'Eye Rest & Water'} <ChevronRight className="w-3.5 h-3.5" />
           </span>
         </div>
 
@@ -440,9 +450,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <div className="mt-2.5 pt-2 border-t border-blue-200/60 flex items-center justify-between text-[11px] text-slate-600">
           <span className="flex items-center gap-1.5 text-indigo-700 font-medium">
             <Eye className="w-3.5 h-3.5 text-indigo-600" />
-            {isTh ? 'พักสายตา 20-20-20' : '20-20-20 Eye break'}
+            {isTh ? 'นาฬิกาจับเวลากฎพักสายตา 20-20-20' : '20-20-20 Eye Rest Timer'}
           </span>
-          <span className="text-slate-500">{isTh ? 'ทุก 20 นาที' : 'Every 20m'}</span>
+          <span className="text-slate-500 font-medium">{isTh ? 'กดเพื่อเริ่มจับเวลา ⏱️' : 'Tap to start timer ⏱️'}</span>
         </div>
       </section>
 
@@ -473,8 +483,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-300 transition-all cursor-pointer flex items-start justify-between gap-3"
               >
                 <div className="space-y-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {getStatusBadge(item.status)}
+                    {item.hasResolvedPhoto && (
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                        📷 {isTh ? 'มีรูปหลังแก้ไข' : 'Proof Attached'}
+                      </span>
+                    )}
                     <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
                       <Clock className="w-3 h-3" />
                       {formatTime(item.time)}

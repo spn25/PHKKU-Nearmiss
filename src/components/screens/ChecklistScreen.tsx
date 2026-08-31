@@ -193,6 +193,7 @@ export const ChecklistScreen: React.FC<ChecklistScreenProps> = ({
 
   const [selectedTask, setSelectedTask] = useState<string>('general');
   const [area, setArea] = useState<string>(KKU_CAMPUS_LOCATIONS[3]);
+  const [customArea, setCustomArea] = useState<string>('');
   const [items, setItems] = useState<ChecklistItem[]>(CHECKLIST_TEMPLATES.general);
   const [notes, setNotes] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -233,10 +234,12 @@ export const ChecklistScreen: React.FC<ChecklistScreenProps> = ({
       height_work: isTh ? 'งานบนที่สูง (Work at Height)' : 'Working at Heights',
     };
 
+    const finalArea = area === 'OTHER' ? (customArea.trim() || 'พื้นที่ระบุเอง (Custom Area)') : area;
+
     submitChecklist({
       userId: currentUser.userId,
       userName: currentUser.name,
-      area: area || 'พื้นที่มหาวิทยาลัยขอนแก่น',
+      area: finalArea || 'พื้นที่มหาวิทยาลัยขอนแก่น',
       checklistType: taskLabels[selectedTask] || selectedTask,
       items: items.map((i) => ({ label: isTh ? i.label : i.labelEn, checked: i.checked })),
       passed: isAllPassed,
@@ -366,7 +369,19 @@ export const ChecklistScreen: React.FC<ChecklistScreenProps> = ({
               {loc}
             </option>
           ))}
+          <option value="OTHER">{isTh ? '✍️ ระบุพื้นที่อื่น ๆ เอง (กรอกเอง)' : '✍️ Specify other area (Custom)'}</option>
         </select>
+
+        {area === 'OTHER' && (
+          <input
+            type="text"
+            placeholder={isTh ? 'พิมพ์ระบุชื่อพื้นที่ / อาคาร / ชั้น / ห้อง...' : 'Enter custom area / building / room...'}
+            value={customArea}
+            onChange={(e) => setCustomArea(e.target.value)}
+            className="w-full min-h-[48px] px-4 py-2.5 rounded-2xl border-2 border-emerald-300 bg-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 mt-2 animate-fade-in"
+            required
+          />
+        )}
       </div>
 
       {/* 4. Quick Action Helpers */}

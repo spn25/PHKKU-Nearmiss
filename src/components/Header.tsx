@@ -40,6 +40,11 @@ export const Header: React.FC<HeaderProps> = ({
         return { title: t.manualTitle, subtitle: t.manualDesc };
       case 'dashboard':
         return { title: t.dashboardTitle, subtitle: t.dashboardDesc };
+      case 'ai_chat':
+        return {
+          title: lang === 'th' ? 'พูดคุยปรึกษากับ AI ความปลอดภัย' : 'Safety AI Advisor',
+          subtitle: lang === 'th' ? 'ผู้ช่วยตอบคำถามความปลอดภัย สารเคมี และการปฐมพยาบาล' : 'AI Safety & First Aid Advisor',
+        };
       case 'profile':
       case 'settings':
         return { title: t.settingsTitle, subtitle: t.profileSection };
