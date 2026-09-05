@@ -22,7 +22,10 @@ export function getSyncStatus(): { isSyncing: boolean; lastSync: string | null; 
 }
 
 /**
- * ดึงข้อมูลล่าสุดทั้งหมดจาก Google Cloud Server มาอัปเดตลงเครื่อง
+ * ซิงค์ข้อมูลกับ Google Cloud Server แบบสองทิศทาง (Bidirectional Cloud Sync)
+ * 1. ส่งข้อมูลที่สร้างจากเครื่องนี้ขึ้นคลาวด์
+ * 2. รับข้อมูลที่อุปกรณ์อื่นสร้าง/แก้ไขกลับมา
+ * 3. รวมข้อมูลและบันทึกอัปเดตให้อุปกรณ์นี้ทันที
  */
 export async function syncWithCloud(): Promise<{
   success: boolean;
@@ -37,30 +40,70 @@ export async function syncWithCloud(): Promise<{
     isSyncing = true;
     syncError = null;
 
-    const res = await fetch('/api/cloud/data', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // รวบรวมข้อมูลในเครื่องเพื่อนำไปซิงค์รวมกับคลาวด์
+    let localNearMiss: NearMissReport[] = [];
+    let localEnv: EnvReport[] = [];
+    let localChecklists: ChecklistSubmission[] = [];
 
-    if (!res.ok) {
-      throw new Error(`Cloud server responded with status: ${res.status}`);
+    try {
+      const rawNM = localStorage.getItem(STORAGE_KEYS.NEAR_MISS_REPORTS);
+      if (rawNM) localNearMiss = JSON.parse(rawNM);
+    } catch {}
+
+    try {
+      const rawEnv = localStorage.getItem(STORAGE_KEYS.ENV_REPORTS);
+      if (rawEnv) localEnv = JSON.parse(rawEnv);
+    } catch {}
+
+    try {
+      const rawChk = localStorage.getItem(STORAGE_KEYS.CHECKLISTS);
+      if (rawChk) localChecklists = JSON.parse(rawChk);
+    } catch {}
+
+    // ยิง API สองทางเพื่อ Merge ข้อมูลบนเซิร์ฟเวอร์
+    let data: any = null;
+    try {
+      const res = await fetch('/api/cloud/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nearMissReports: localNearMiss,
+          envReports: localEnv,
+          checklists: localChecklists,
+        }),
+      });
+
+      if (res.ok) {
+        data = await res.json();
+      }
+    } catch (postErr) {
+      console.warn('Bidirectional sync failed, trying fallback GET:', postErr);
     }
 
-    const data = await res.json();
+    // Fallback: ดึง GET /api/cloud/data หาก POST ขัดข้อง
+    if (!data || !data.success) {
+      const getRes = await fetch('/api/cloud/data', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (getRes.ok) {
+        data = await getRes.json();
+      }
+    }
 
     if (data && data.success) {
       const nearMiss = Array.isArray(data.nearMissReports) ? data.nearMissReports : [];
       const env = Array.isArray(data.envReports) ? data.envReports : [];
       const checklists = Array.isArray(data.checklists) ? data.checklists : [];
 
-      // Save to local storage cache
+      // เซฟข้อมูลที่เชื่อมโยงตรงกันทั้งหมดลง Local Storage
       localStorage.setItem(STORAGE_KEYS.NEAR_MISS_REPORTS, JSON.stringify(nearMiss));
       localStorage.setItem(STORAGE_KEYS.ENV_REPORTS, JSON.stringify(env));
       localStorage.setItem(STORAGE_KEYS.CHECKLISTS, JSON.stringify(checklists));
 
       lastSyncTimestamp = new Date().toISOString();
 
-      // Dispatch event to inform all active React screens
+      // แจ้งทุกหน้าจอของ React ให้รีเฟรชข้อมูลแสดงผลตรงกันทันที
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent(CLOUD_SYNC_EVENT, {
@@ -76,10 +119,10 @@ export async function syncWithCloud(): Promise<{
         checklists,
       };
     } else {
-      throw new Error(data?.error || 'Invalid response format');
+      throw new Error(data?.error || 'Invalid response from cloud');
     }
   } catch (err: any) {
-    console.warn('Cloud sync offline or error:', err?.message || err);
+    console.warn('Cloud sync offline or error, retaining local data:', err?.message || err);
     syncError = err?.message || 'Network error';
     return { success: false, error: syncError || undefined };
   } finally {

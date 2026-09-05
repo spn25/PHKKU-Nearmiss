@@ -1,0 +1,118 @@
+{
+  "nearMissReports": [
+    {
+      "id": "nm-101",
+      "type": "unsafe_condition",
+      "description": "พบบันไดทางขึ้นอาคารเรียนรวมมีกระเบื้องแตกหลุดร่อนและมีน้ำขัง เสี่ยงต่อการลื่นล้ม",
+      "location": "อาคารเรียนรวม 1 (GL1) บันไดฝั่งทิศเหนือ",
+      "severity": "medium",
+      "reportedBy": "kku-user-001",
+      "reporterName": "นายสาสุข รักปลอดภัย",
+      "status": "resolved",
+      "createdAt": "2026-09-04T23:24:41.761Z",
+      "updatedAt": "2026-09-05T03:28:16.418Z",
+      "aiAnalysisTag": "ตรวจพบพื้นผิวลื่นและชำรุด",
+      "resolvedAt": "2026-09-05T03:28:16.418Z"
+    },
+    {
+      "id": "nm-102",
+      "type": "near_miss",
+      "description": "กิ่งไม้ใหญ่หักห้อยลงมาพาดสายไฟฟ้าแรงสูงใกล้ทางเดินเท้า เกือบหล่นใส่รถจักรยานยนต์",
+      "location": "ถนนริมบึงสีฐาน ตรงข้ามศูนย์ประชุมอเนกประสงค์กาญจนาภิเษก",
+      "severity": "high",
+      "reportedBy": "kku-user-001",
+      "reporterName": "นายสาสุข รักปลอดภัย",
+      "status": "new",
+      "createdAt": "2026-09-04T09:24:41.761Z",
+      "updatedAt": "2026-09-04T09:24:41.761Z",
+      "aiAnalysisTag": "เสี่ยงอันตรายจากไฟฟ้าและวัตถุตกหล่น"
+    },
+    {
+      "id": "nm-103",
+      "type": "unsafe_act",
+      "description": "ผู้รับเหมากำลังตัดเหล็กบนที่สูงโดยไม่สวมสายรัดนิรภัย (Safety Harness)",
+      "location": "ไซต์งานต่อเติมอาคารคณะแพทยศาสตร์",
+      "severity": "high",
+      "reportedBy": "kku-user-001",
+      "reporterName": "นายสาสุข รักปลอดภัย",
+      "status": "resolved",
+      "createdAt": "2026-09-03T03:24:41.761Z",
+      "updatedAt": "2026-09-04T03:24:41.761Z",
+      "resolvedAt": "2026-09-04T03:24:41.761Z",
+      "adminNote": "เจ้าหน้าที่ จป. ลงพื้นที่ตักเตือนและผู้รับเหมาสวมสายรัดนิรภัยเรียบร้อย",
+      "aiAnalysisTag": "ไม่สวมอุปกรณ์ป้องกันการตกจากที่สูง"
+    },
+    {
+      "id": "test-123",
+      "type": "near_miss",
+      "description": "ทดสอบแจ้งเหตุ",
+      "location": "หน้าอาคารสิริคุณากร",
+      "severity": "medium",
+      "reportedBy": "test-user",
+      "reporterName": "ทดสอบ",
+      "status": "new"
+    }
+  ],
+  "envReports": [
+    {
+      "id": "env-201",
+      "category": "waste",
+      "description": "ถังขยะแยกประเภทหน้าโรงอาหารเต็มและมีขยะอิเล็กทรอนิกส์ปะปนกับขยะทั่วไป",
+      "location": "ศูนย์อาหารและบริการ 1 (KKU Complex)",
+      "reportedBy": "kku-user-001",
+      "reporterName": "นายสาสุข รักปลอดภัย",
+      "status": "in_progress",
+      "severity": "medium",
+      "createdAt": "2026-09-04T21:24:41.761Z",
+      "updatedAt": "2026-09-05T00:24:41.761Z",
+      "adminNote": "ประสานงานฝ่ายจัดการขยะเข้าเคลียร์พื้นที่แล้ว"
+    },
+    {
+      "id": "env-202",
+      "category": "wastewater",
+      "description": "ท่อระบายน้ำอุดตัน มีน้ำท่วมขังและส่งกลิ่นเหม็นหลังฝนตก",
+      "location": "ด้านหลังอาคารโรงประลอง วิศวกรรมเครื่องกล",
+      "reportedBy": "kku-user-001",
+      "reporterName": "นายสาสุข รักปลอดภัย",
+      "status": "in_progress",
+      "severity": "medium",
+      "createdAt": "2026-09-04T15:24:41.761Z",
+      "updatedAt": "2026-09-05T03:28:13.247Z"
+    }
+  ],
+  "checklists": [
+    {
+      "id": "chk-301",
+      "userId": "kku-user-001",
+      "userName": "นายสาสุข รักปลอดภัย",
+      "area": "โรงประลองภาควิชาวิศวกรรมเครื่องกล (EN Workshop)",
+      "checklistType": "งานซ่อมบำรุงเครื่องจักร",
+      "items": [
+        {
+          "label": "สวมหมวกและแว่นตานิรภัย",
+          "checked": true
+        },
+        {
+          "label": "สวมรองเท้านิรภัยหัวเหล็ก",
+          "checked": true
+        },
+        {
+          "label": "ตรวจสอบปุ่มหยุดฉุกเฉิน (Emergency Stop)",
+          "checked": true
+        },
+        {
+          "label": "พื้นที่ทำงานแห้ง สะอาด ไม่มีคราบน้ำมัน",
+          "checked": true
+        },
+        {
+          "label": "ถังดับเพลิงพร้อมใช้งานในระยะ 15 เมตร",
+          "checked": true
+        }
+      ],
+      "passed": true,
+      "notes": "อุปกรณ์พร้อมใช้งาน เจ้าหน้าที่ตรวจสอบครบถ้วน",
+      "createdAt": "2026-09-04T19:24:41.761Z"
+    }
+  ],
+  "lastUpdated": "2026-09-05T03:41:46.138Z"
+}

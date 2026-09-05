@@ -12,6 +12,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { ReportStatus } from '../types';
+import { compressImageFile } from '../lib/imageCompressor';
 
 interface AdminResolutionModalProps {
   isOpen: boolean;
@@ -46,21 +47,21 @@ export const AdminResolutionModal: React.FC<AdminResolutionModalProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size (under 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert(isTh ? 'ขนาดไฟล์ภาพเกิน 5MB' : 'Image size exceeds 5MB');
-      return;
+    try {
+      const compressed = await compressImageFile(file, 1024, 1024, 0.72);
+      setResolvedPhoto(compressed);
+    } catch (err) {
+      console.warn('Error compressing resolution photo, falling back to raw:', err);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setResolvedPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setResolvedPhoto(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleRemovePhoto = () => {

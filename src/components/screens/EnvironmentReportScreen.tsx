@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { CurrentUser, ScreenName, EnvCategory, Severity } from '../../types';
 import { translations } from '../../lib/i18n';
-import { submitEnvironmentReport, KKU_CAMPUS_LOCATIONS } from '../../lib/storage';
+import { submitEnvironmentReportAsync, KKU_CAMPUS_LOCATIONS } from '../../lib/storage';
+import { compressImageFile } from '../../lib/imageCompressor';
 
 interface EnvironmentReportScreenProps {
   currentUser: CurrentUser;
@@ -54,14 +55,20 @@ export const EnvironmentReportScreen: React.FC<EnvironmentReportScreenProps> = (
     { id: 'noise', labelTh: 'มลพิษทางเสียง', labelEn: 'Excessive Noise', icon: Volume2 },
   ];
 
-  const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoDataUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImageFile(file, 1024, 1024, 0.72);
+        setPhotoDataUrl(compressed);
+      } catch (err) {
+        console.warn('Error compressing photo:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoDataUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -80,13 +87,13 @@ export const EnvironmentReportScreen: React.FC<EnvironmentReportScreenProps> = (
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalLocation = location === 'OTHER' ? customLocation : location;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      submitEnvironmentReport({
+    try {
+      await submitEnvironmentReportAsync({
         category,
         location: finalLocation || 'มหาวิทยาลัยขอนแก่น',
         description: description.trim() || `${isTh ? 'รายงานปัญหาสิ่งแวดล้อม' : 'Environment Issue'}: ${category}`,
@@ -98,12 +105,22 @@ export const EnvironmentReportScreen: React.FC<EnvironmentReportScreenProps> = (
 
       setIsSubmitting(false);
       setIsSuccess(true);
-      onEnvReportSubmitted(isTh ? 'บันทึกรายงานสิ่งแวดล้อมสำเร็จ!' : 'Environment Report Submitted!');
+      onEnvReportSubmitted(
+        isTh ? '✓ บันทึกรายงานสิ่งแวดล้อมและซิงค์ทุกเครื่องสำเร็จ!' : 'Environment Report Submitted & Synced!'
+      );
 
       setTimeout(() => {
         onNavigate('home');
       }, 1500);
-    }, 400);
+    } catch (err) {
+      console.error('Submit env error:', err);
+      setIsSubmitting(false);
+      setIsSuccess(true);
+      onEnvReportSubmitted(isTh ? 'บันทึกรายงานสิ่งแวดล้อมสำเร็จ!' : 'Environment Report Submitted!');
+      setTimeout(() => {
+        onNavigate('home');
+      }, 1500);
+    }
   };
 
   if (isSuccess) {

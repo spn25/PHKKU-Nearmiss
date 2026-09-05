@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart3,
   AlertTriangle,
@@ -95,6 +95,29 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
 
+  // Auto-sync polling every 3.5s while Dashboard is active so incoming reports appear in real-time
+  useEffect(() => {
+    let isMounted = true;
+    const poll = async () => {
+      try {
+        const res = await syncWithCloud();
+        if (res.success && isMounted) {
+          onRefreshData();
+        }
+      } catch (err) {
+        // silent catch
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, 3500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [onRefreshData]);
+
   const safeNearMiss = Array.isArray(nearMissReports) ? nearMissReports : [];
   const safeEnv = Array.isArray(envReports) ? envReports : [];
 
@@ -162,6 +185,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       updateEnvReportStatus(id, status, note, resolvedPhotoUrl);
     }
     onRefreshData();
+    syncWithCloud().then(() => onRefreshData());
     onShowToast(
       isTh
         ? `✓ [แอดมิน] บันทึกการแก้ไขและอัปเดตรูปภาพเรียบร้อยแล้ว`
@@ -192,6 +216,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       updateEnvReportStatus(id, newStatus, note, resolvedPhotoUrl);
     }
     onRefreshData();
+    syncWithCloud().then(() => onRefreshData());
     onShowToast(
       isTh
         ? `✓ [แอดมิน] อัปเดตสถานะเป็น: ${newStatus === 'resolved' ? 'แก้ไขแล้ว' : newStatus === 'in_progress' ? 'กำลังดำเนินการ' : 'รอดำเนินการ'}`

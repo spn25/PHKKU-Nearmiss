@@ -46,6 +46,21 @@ async function startServer() {
     }
   });
 
+  // Bidirectional two-way sync: merges client-submitted items and returns complete state
+  app.post('/api/cloud/sync', (req, res) => {
+    try {
+      const clientData = req.body || {};
+      const merged = cloudStore.sync(clientData);
+      res.json({
+        success: true,
+        ...merged,
+      });
+    } catch (err: any) {
+      console.error('Error during cloud sync:', err);
+      res.status(500).json({ error: 'Failed to sync data', details: err?.message });
+    }
+  });
+
   // Near Miss Reports
   app.post('/api/cloud/near-miss', (req, res) => {
     try {

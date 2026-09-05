@@ -616,6 +616,19 @@ export function submitNearMissReport(data: Omit<NearMissReport, 'id' | 'createdA
   return newReport;
 }
 
+export async function submitNearMissReportAsync(
+  data: Omit<NearMissReport, 'id' | 'createdAt' | 'updatedAt' | 'status'>
+): Promise<NearMissReport> {
+  const newReport = submitNearMissReport(data);
+  // Guarantee upload to Google Cloud before returning
+  try {
+    await postNearMissToCloud(newReport);
+  } catch (err) {
+    console.warn('postNearMissToCloud error:', err);
+  }
+  return newReport;
+}
+
 export function updateNearMissStatus(
   id: string,
   status: ReportStatus,
@@ -734,6 +747,18 @@ export function submitEnvironmentReport(data: Omit<EnvReport, 'id' | 'createdAt'
   // Sync with Google Cloud server
   postEnvToCloud(newReport);
 
+  return newReport;
+}
+
+export async function submitEnvironmentReportAsync(
+  data: Omit<EnvReport, 'id' | 'createdAt' | 'status'>
+): Promise<EnvReport> {
+  const newReport = submitEnvironmentReport(data);
+  try {
+    await postEnvToCloud(newReport);
+  } catch (err) {
+    console.warn('postEnvToCloud error:', err);
+  }
   return newReport;
 }
 

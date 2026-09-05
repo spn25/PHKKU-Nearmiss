@@ -159,15 +159,90 @@ class CloudStore {
   }
 
   public getData(): CloudDatabase {
+    this.db = this.loadFromDisk();
+    return this.db;
+  }
+
+  /**
+   * Two-way sync: Merges client-submitted reports with server state
+   * Ensures no report created on any device is ever lost.
+   */
+  public sync(clientData: {
+    nearMissReports?: NearMissReport[];
+    envReports?: EnvReport[];
+    checklists?: ChecklistSubmission[];
+  }): CloudDatabase {
+    this.db = this.loadFromDisk();
+
+    // 1. Merge Near Miss
+    if (Array.isArray(clientData.nearMissReports)) {
+      for (const clientReport of clientData.nearMissReports) {
+        if (!clientReport || !clientReport.id) continue;
+        const idx = this.db.nearMissReports.findIndex((r) => r.id === clientReport.id);
+        if (idx === -1) {
+          // Newly submitted report from a device
+          this.db.nearMissReports.unshift(clientReport);
+        } else {
+          // Reconcile status and notes: keep whichever has newer updatedAt
+          const existing = this.db.nearMissReports[idx];
+          const clientTime = new Date(clientReport.updatedAt || clientReport.createdAt || 0).getTime();
+          const serverTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+          if (clientTime > serverTime) {
+            this.db.nearMissReports[idx] = { ...existing, ...clientReport };
+          }
+        }
+      }
+    }
+
+    // 2. Merge Env Reports
+    if (Array.isArray(clientData.envReports)) {
+      for (const clientReport of clientData.envReports) {
+        if (!clientReport || !clientReport.id) continue;
+        const idx = this.db.envReports.findIndex((r) => r.id === clientReport.id);
+        if (idx === -1) {
+          this.db.envReports.unshift(clientReport);
+        } else {
+          const existing = this.db.envReports[idx];
+          const clientTime = new Date(clientReport.updatedAt || clientReport.createdAt || 0).getTime();
+          const serverTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+          if (clientTime > serverTime) {
+            this.db.envReports[idx] = { ...existing, ...clientReport };
+          }
+        }
+      }
+    }
+
+    // 3. Merge Checklists
+    if (Array.isArray(clientData.checklists)) {
+      for (const clientChk of clientData.checklists) {
+        if (!clientChk || !clientChk.id) continue;
+        const idx = this.db.checklists.findIndex((c) => c.id === clientChk.id);
+        if (idx === -1) {
+          this.db.checklists.unshift(clientChk);
+        }
+      }
+    }
+
+    // Sort newest first
+    this.db.nearMissReports.sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+    this.db.envReports.sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+
+    this.db.lastUpdated = new Date().toISOString();
+    this.saveToDisk(this.db);
     return this.db;
   }
 
   // --- Near Miss Reports ---
   public addNearMiss(report: NearMissReport): NearMissReport {
+    this.db = this.loadFromDisk();
     // If id exists, update instead of duplicating
     const idx = this.db.nearMissReports.findIndex((r) => r.id === report.id);
     if (idx !== -1) {
-      this.db.nearMissReports[idx] = report;
+      this.db.nearMissReports[idx] = { ...this.db.nearMissReports[idx], ...report };
     } else {
       this.db.nearMissReports.unshift(report);
     }
@@ -184,6 +259,7 @@ class CloudStore {
       resolvedPhotoDataUrl?: string;
     }
   ): NearMissReport | null {
+    this.db = this.loadFromDisk();
     const idx = this.db.nearMissReports.findIndex((r) => r.id === id);
     if (idx === -1) return null;
 
@@ -218,9 +294,10 @@ class CloudStore {
 
   // --- Environment Reports ---
   public addEnvReport(report: EnvReport): EnvReport {
+    this.db = this.loadFromDisk();
     const idx = this.db.envReports.findIndex((r) => r.id === report.id);
     if (idx !== -1) {
-      this.db.envReports[idx] = report;
+      this.db.envReports[idx] = { ...this.db.envReports[idx], ...report };
     } else {
       this.db.envReports.unshift(report);
     }
@@ -237,6 +314,7 @@ class CloudStore {
       resolvedPhotoDataUrl?: string;
     }
   ): EnvReport | null {
+    this.db = this.loadFromDisk();
     const idx = this.db.envReports.findIndex((r) => r.id === id);
     if (idx === -1) return null;
 
@@ -259,6 +337,7 @@ class CloudStore {
   }
 
   public deleteEnvReport(id: string): boolean {
+    this.db = this.loadFromDisk();
     const initialLen = this.db.envReports.length;
     this.db.envReports = this.db.envReports.filter((r) => r.id !== id);
     if (this.db.envReports.length !== initialLen) {
@@ -271,6 +350,7 @@ class CloudStore {
 
   // --- Checklists ---
   public addChecklist(submission: ChecklistSubmission): ChecklistSubmission {
+    this.db = this.loadFromDisk();
     const idx = this.db.checklists.findIndex((c) => c.id === submission.id);
     if (idx !== -1) {
       this.db.checklists[idx] = submission;

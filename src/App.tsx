@@ -75,14 +75,14 @@ export function App() {
 
     window.addEventListener(CLOUD_SYNC_EVENT, handleCloudEvent);
 
-    // Auto-poll Google Cloud server every 6 seconds so any report submitted from another device shows up immediately
+    // Auto-poll Google Cloud server every 3.5 seconds so any report submitted from another device shows up immediately
     const pollInterval = setInterval(() => {
       syncWithCloud().then((res) => {
         if (res.success) {
           refreshData();
         }
       });
-    }, 6000);
+    }, 3500);
 
     // Sync immediately when switching back to this browser tab
     const handleVisibilityChange = () => {
@@ -162,6 +162,10 @@ export function App() {
     // Scroll smoothly to top when switching views
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setCurrentScreen(screen);
+    // Sync data immediately on view change
+    syncWithCloud().then((res) => {
+      if (res.success) refreshData();
+    });
   };
 
   const handleAIHazardToNearMiss = (prefillData: any) => {
@@ -227,6 +231,9 @@ export function App() {
             onNavigate={handleNavigate}
             onReportSubmitted={(msg) => {
               refreshData();
+              syncWithCloud().then((res) => {
+                if (res.success) refreshData();
+              });
               showToast(msg, 'success');
             }}
             initialData={nearMissPrefill}
@@ -239,6 +246,9 @@ export function App() {
             onNavigate={handleNavigate}
             onChecklistSubmitted={(msg) => {
               refreshData();
+              syncWithCloud().then((res) => {
+                if (res.success) refreshData();
+              });
               showToast(msg, 'success');
             }}
           />
@@ -276,6 +286,9 @@ export function App() {
             onNavigate={handleNavigate}
             onEnvReportSubmitted={(msg) => {
               refreshData();
+              syncWithCloud().then((res) => {
+                if (res.success) refreshData();
+              });
               showToast(msg, 'success');
             }}
           />
