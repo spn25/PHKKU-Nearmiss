@@ -9,6 +9,7 @@ import {
   isUserLoggedIn,
   logoutUser,
 } from './lib/storage';
+import { syncWithCloud, CLOUD_SYNC_EVENT } from './lib/cloudSync';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { Toast } from './components/Toast';
@@ -38,6 +39,10 @@ export function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'danger' | 'info'>('success');
 
+  // Cloud Sync state across all devices
+  const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+
   // Pre-fill state for Near Miss form (when transferred from AI Hazard Scanner)
   const [nearMissPrefill, setNearMissPrefill] = useState<any>(null);
 
@@ -52,6 +57,72 @@ export function App() {
   useEffect(() => {
     refreshData();
   }, [currentScreen]);
+
+  // Google Cloud real-time data sync across all devices
+  useEffect(() => {
+    // Initial fetch from cloud
+    syncWithCloud().then((res) => {
+      if (res.success) {
+        refreshData();
+        setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      }
+    });
+
+    const handleCloudEvent = () => {
+      refreshData();
+      setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    };
+
+    window.addEventListener(CLOUD_SYNC_EVENT, handleCloudEvent);
+
+    // Auto-poll Google Cloud server every 6 seconds so any report submitted from another device shows up immediately
+    const pollInterval = setInterval(() => {
+      syncWithCloud().then((res) => {
+        if (res.success) {
+          refreshData();
+        }
+      });
+    }, 6000);
+
+    // Sync immediately when switching back to this browser tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncWithCloud().then((res) => {
+          if (res.success) refreshData();
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener(CLOUD_SYNC_EVENT, handleCloudEvent);
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const handleManualCloudSync = async () => {
+    setIsCloudSyncing(true);
+    const result = await syncWithCloud();
+    setIsCloudSyncing(false);
+    if (result.success) {
+      setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      refreshData();
+      showToast(
+        currentUser.language === 'en'
+          ? '✓ Google Cloud Synced (All devices updated)'
+          : '✓ ข้อมูลซิงค์กับ Google Cloud สำเร็จ (ทุกเครื่องเห็นตรงกัน)',
+        'success'
+      );
+    } else {
+      showToast(
+        currentUser.language === 'en'
+          ? 'Using offline cached data'
+          : 'กำลังใช้งานข้อมูลแคชในเครื่อง',
+        'info'
+      );
+    }
+  };
 
   const showToast = (msg: string, type: 'success' | 'danger' | 'info' = 'success') => {
     setToastMessage(msg);
@@ -132,6 +203,9 @@ export function App() {
         onNavigate={handleNavigate}
         onLanguageChange={handleLanguageChange}
         onLogout={handleLogout}
+        isCloudSyncing={isCloudSyncing}
+        lastSyncTime={lastSyncTime}
+        onTriggerSync={handleManualCloudSync}
       />
 
       {/* Main Screen Container */}

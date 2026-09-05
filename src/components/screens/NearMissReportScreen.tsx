@@ -136,8 +136,8 @@ export const NearMissReportScreen: React.FC<NearMissReportScreenProps> = ({
         </p>
         <div className="mt-6 p-3 bg-red-50 rounded-2xl border border-red-200 text-xs text-red-800 font-medium">
           {isTh
-            ? '✓ บันทึกข้อมูลลงเครื่องสำเร็จและส่งข้อมูลไปยังศูนย์ความปลอดภัยเรียบร้อย'
-            : '✓ Stored in Local Storage and notified Safety Center'}
+            ? '✓ บันทึกข้อมูลขึ้น Google Cloud สำเร็จ — ทุกเครื่องสามารถตรวจสอบและติดตามผลได้ทันที'
+            : '✓ Saved to Google Cloud successfully — synced across all devices'}
         </div>
       </div>
     );

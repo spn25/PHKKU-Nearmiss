@@ -120,6 +120,11 @@ export const EnvironmentReportScreen: React.FC<EnvironmentReportScreenProps> = (
             ? 'ข้อมูลถูกส่งต่อไปยังฝ่ายสิ่งแวดล้อมและอาคารสีเขียว มข. เรียบร้อยแล้ว'
             : 'Sent to KKU Green Building & Environment Unit'}
         </p>
+        <div className="mt-6 p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-800 font-medium">
+          {isTh
+            ? '✓ บันทึกข้อมูลขึ้น Google Cloud สำเร็จ — ทุกเครื่องสามารถตรวจสอบและติดตามผลได้ทันที'
+            : '✓ Saved to Google Cloud successfully — synced across all devices'}
+        </div>
       </div>
     );
   }

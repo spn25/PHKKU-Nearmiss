@@ -3,6 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import { cloudStore } from './server/cloudStore';
 
 dotenv.config();
 
@@ -28,6 +29,119 @@ async function startServer() {
   // Health check endpoint
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
+  });
+
+  // ========================================================
+  // Google Cloud Data Persistence Endpoints for All Devices
+  // ========================================================
+  app.get('/api/cloud/data', (_req, res) => {
+    try {
+      const data = cloudStore.getData();
+      res.json({
+        success: true,
+        ...data,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to fetch cloud data', details: err?.message });
+    }
+  });
+
+  // Near Miss Reports
+  app.post('/api/cloud/near-miss', (req, res) => {
+    try {
+      const report = req.body;
+      if (!report || !report.id) {
+        return res.status(400).json({ error: 'Report with ID is required' });
+      }
+      const saved = cloudStore.addNearMiss(report);
+      res.json({ success: true, report: saved });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to save near miss report', details: err?.message });
+    }
+  });
+
+  app.patch('/api/cloud/near-miss/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNote, resolvedPhotoDataUrl } = req.body;
+      const updated = cloudStore.updateNearMiss(id, { status, adminNote, resolvedPhotoDataUrl });
+      if (!updated) {
+        return res.status(404).json({ error: 'Report not found' });
+      }
+      res.json({ success: true, report: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to update near miss report', details: err?.message });
+    }
+  });
+
+  app.delete('/api/cloud/near-miss/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      cloudStore.deleteNearMiss(id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to delete report', details: err?.message });
+    }
+  });
+
+  // Environment Reports
+  app.post('/api/cloud/env', (req, res) => {
+    try {
+      const report = req.body;
+      if (!report || !report.id) {
+        return res.status(400).json({ error: 'Env report with ID is required' });
+      }
+      const saved = cloudStore.addEnvReport(report);
+      res.json({ success: true, report: saved });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to save env report', details: err?.message });
+    }
+  });
+
+  app.patch('/api/cloud/env/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNote, resolvedPhotoDataUrl } = req.body;
+      const updated = cloudStore.updateEnvReport(id, { status, adminNote, resolvedPhotoDataUrl });
+      if (!updated) {
+        return res.status(404).json({ error: 'Env report not found' });
+      }
+      res.json({ success: true, report: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to update env report', details: err?.message });
+    }
+  });
+
+  app.delete('/api/cloud/env/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      cloudStore.deleteEnvReport(id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to delete env report', details: err?.message });
+    }
+  });
+
+  // Checklists
+  app.post('/api/cloud/checklists', (req, res) => {
+    try {
+      const checklist = req.body;
+      if (!checklist || !checklist.id) {
+        return res.status(400).json({ error: 'Checklist with ID is required' });
+      }
+      const saved = cloudStore.addChecklist(checklist);
+      res.json({ success: true, checklist: saved });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to save checklist', details: err?.message });
+    }
+  });
+
+  app.get('/api/cloud/checklists', (_req, res) => {
+    try {
+      res.json({ success: true, checklists: cloudStore.getData().checklists });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to fetch checklists', details: err?.message });
+    }
   });
 
   // AI Safety & Environment Consultant endpoint

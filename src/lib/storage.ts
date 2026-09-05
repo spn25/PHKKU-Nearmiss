@@ -17,6 +17,15 @@ import {
   ReportStatus,
   UserRole,
 } from '../types';
+import {
+  postNearMissToCloud,
+  patchNearMissToCloud,
+  deleteNearMissFromCloud,
+  postEnvToCloud,
+  patchEnvToCloud,
+  deleteEnvFromCloud,
+  postChecklistToCloud,
+} from './cloudSync';
 
 export const STORAGE_KEYS = {
   CURRENT_USER: 'safemate_currentUser',
@@ -600,6 +609,10 @@ export function submitNearMissReport(data: Omit<NearMissReport, 'id' | 'createdA
 
   reports.unshift(newReport);
   localStorage.setItem(STORAGE_KEYS.NEAR_MISS_REPORTS, JSON.stringify(reports));
+
+  // Sync with Google Cloud server
+  postNearMissToCloud(newReport);
+
   return newReport;
 }
 
@@ -624,6 +637,9 @@ export function updateNearMissStatus(
       reports[index].resolvedAt = new Date().toISOString();
     }
     localStorage.setItem(STORAGE_KEYS.NEAR_MISS_REPORTS, JSON.stringify(reports));
+
+    // Sync with Google Cloud server
+    patchNearMissToCloud(id, status, adminNote, resolvedPhotoDataUrl);
   }
   return reports;
 }
@@ -631,6 +647,10 @@ export function updateNearMissStatus(
 export function deleteNearMissReport(id: string): NearMissReport[] {
   const reports = getNearMissReports().filter((r) => r.id !== id);
   localStorage.setItem(STORAGE_KEYS.NEAR_MISS_REPORTS, JSON.stringify(reports));
+
+  // Sync with Google Cloud server
+  deleteNearMissFromCloud(id);
+
   return reports;
 }
 
@@ -658,6 +678,10 @@ export function submitChecklist(data: Omit<ChecklistSubmission, 'id' | 'createdA
 
   list.unshift(newSubmission);
   localStorage.setItem(STORAGE_KEYS.CHECKLISTS, JSON.stringify(list));
+
+  // Sync with Google Cloud server
+  postChecklistToCloud(newSubmission);
+
   return newSubmission;
 }
 
@@ -706,6 +730,10 @@ export function submitEnvironmentReport(data: Omit<EnvReport, 'id' | 'createdAt'
 
   list.unshift(newReport);
   localStorage.setItem(STORAGE_KEYS.ENV_REPORTS, JSON.stringify(list));
+
+  // Sync with Google Cloud server
+  postEnvToCloud(newReport);
+
   return newReport;
 }
 
@@ -730,6 +758,9 @@ export function updateEnvReportStatus(
       list[idx].resolvedAt = new Date().toISOString();
     }
     localStorage.setItem(STORAGE_KEYS.ENV_REPORTS, JSON.stringify(list));
+
+    // Sync with Google Cloud server
+    patchEnvToCloud(id, status, adminNote, resolvedPhotoDataUrl);
   }
   return list;
 }
@@ -737,6 +768,10 @@ export function updateEnvReportStatus(
 export function deleteEnvReport(id: string): EnvReport[] {
   const list = getEnvReports().filter((e) => e.id !== id);
   localStorage.setItem(STORAGE_KEYS.ENV_REPORTS, JSON.stringify(list));
+
+  // Sync with Google Cloud server
+  deleteEnvFromCloud(id);
+
   return list;
 }
 
