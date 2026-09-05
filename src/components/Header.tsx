@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Globe, PhoneCall, ChevronLeft, Wifi, LogOut, ShieldCheck, User, Cloud, RefreshCw } from 'lucide-react';
+import { Shield, Globe, PhoneCall, ChevronLeft, LogOut, ShieldCheck, User } from 'lucide-react';
 import { ScreenName, CurrentUser, Language } from '../types';
 import { translations } from '../lib/i18n';
 import { isAdminAuthenticated } from '../lib/storage';
@@ -65,35 +65,9 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-40 bg-slate-900 text-white shadow-md border-b border-slate-800">
       {/* Top utility bar */}
       <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between text-xs border-b border-slate-800/80">
-        <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-medium">
-          <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
-          </span>
-          <Cloud className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-          <span className="text-slate-300 font-semibold hidden xs:inline">Google Cloud:</span>
-          <span className="text-sky-300 font-bold">
-            {lang === 'th' ? 'ซิงค์ทุกเครื่อง' : 'Synced (All Devices)'}
-          </span>
-          {lastSyncTime && (
-            <span className="text-slate-400 text-[11px] hidden sm:inline">
-              ({lastSyncTime})
-            </span>
-          )}
-          {onTriggerSync && (
-            <button
-              id="btn-cloud-sync"
-              onClick={onTriggerSync}
-              disabled={isCloudSyncing}
-              title={lang === 'th' ? 'กดเพื่อซิงค์ข้อมูลกับ Google Cloud ทันที' : 'Sync now with Google Cloud'}
-              className="p-1 -my-1 rounded hover:bg-slate-800 text-slate-400 hover:text-sky-300 active:scale-95 transition-all flex items-center gap-1"
-            >
-              <RefreshCw className={`w-3 h-3 ${isCloudSyncing ? 'animate-spin text-sky-400' : ''}`} />
-              <span className="text-[10px] text-slate-400 hidden md:inline">
-                {isCloudSyncing ? (lang === 'th' ? 'กำลังซิงค์...' : 'Syncing...') : (lang === 'th' ? 'รีเฟรช' : 'Refresh')}
-              </span>
-            </button>
-          )}
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
+          <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>{lang === 'th' ? 'มหาวิทยาลัยขอนแก่น' : 'Khon Kaen University'}</span>
         </div>
 
         <div className="flex items-center gap-2">

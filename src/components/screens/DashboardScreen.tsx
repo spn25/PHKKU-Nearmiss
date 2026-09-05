@@ -22,8 +22,6 @@ import {
   Camera,
   Image as ImageIcon,
   Sparkles,
-  Cloud,
-  RefreshCw,
 } from 'lucide-react';
 import {
   CurrentUser,
@@ -349,35 +347,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             ? 'ผู้ใช้ทั่วไปดูสถิติและสถานะได้ ส่วนแอดมินสามารถจัดการสถานะและแนบรูปภาพหลังแก้ไขได้'
             : 'General users can view progress. Admins can manage statuses and post-resolution photos.'}
         </p>
-
-        {/* Google Cloud Cross-Device Sync Notice */}
-        <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-indigo-200">
-          <div className="flex items-center gap-1.5">
-            <Cloud className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-            <span>
-              {isTh
-                ? 'ข้อมูลเชื่อมต่อ Google Cloud: ทุกเครื่องมองเห็นข้อมูลตรงกันแบบเรียลไทม์'
-                : 'Connected to Google Cloud: Real-time sync across all devices'}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={async () => {
-              const res = await syncWithCloud();
-              if (res.success) {
-                onRefreshData();
-                onShowToast(
-                  isTh ? '✓ ซิงค์ข้อมูลกับ Google Cloud สำเร็จ' : '✓ Synced with Google Cloud',
-                  'success'
-                );
-              }
-            }}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-900/60 hover:bg-indigo-800/80 text-sky-300 text-[11px] font-semibold transition-all border border-indigo-700/50"
-          >
-            <RefreshCw className="w-3 h-3" />
-            <span>{isTh ? 'ซิงค์ข้อมูล' : 'Sync'}</span>
-          </button>
-        </div>
       </div>
 
       {/* 2. Top Summary KPI Cards */}
